@@ -6,10 +6,15 @@ _CURRENT_HOME="$(getent passwd "$_CURRENT_USER" 2>/dev/null | cut -d: -f6)"
 if [ -n "$_CURRENT_HOME" ] && [ "$HOME" != "$_CURRENT_HOME" ]; then
     export HOME="$_CURRENT_HOME"
     cd "$HOME" 2>/dev/null || true
-    # Clear inherited XDG vars so they default to $HOME-based paths
-    unset XDG_CACHE_HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME 2>/dev/null
 fi
 unset _CURRENT_USER _CURRENT_HOME
+
+# Reset XDG vars only when they don't match the current $HOME
+# (Hyprland's env.lua sets them session-wide; su inherits them cross-user)
+if [[ "${XDG_CACHE_HOME:-}"  != "$HOME/.cache"       ]]; then export XDG_CACHE_HOME="$HOME/.cache";       fi
+if [[ "${XDG_CONFIG_HOME:-}" != "$HOME/.config"      ]]; then export XDG_CONFIG_HOME="$HOME/.config";      fi
+if [[ "${XDG_DATA_HOME:-}"   != "$HOME/.local/share"  ]]; then export XDG_DATA_HOME="$HOME/.local/share";   fi
+if [[ "${XDG_STATE_HOME:-}"  != "$HOME/.local/state"  ]]; then export XDG_STATE_HOME="$HOME/.local/state";  fi
 
 [[ $- != *i* ]] && return
 PS1='[\u@\h \W]\$ '
