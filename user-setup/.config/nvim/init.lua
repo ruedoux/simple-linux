@@ -571,7 +571,7 @@ vim.api.nvim_create_autocmd("User", {
 	pattern = "MasonUpdateCompleted",
 	callback = function()
 		local registry = require("mason-registry")
-		local servers = { "lua-language-server", "basedpyright", "clangd" }
+		local servers = { "lua-language-server", "basedpyright", "clangd", "roslyn-language-server" }
 		for _, srv in ipairs(servers) do
 			local ok, pkg = pcall(registry.get_package, srv)
 			if not ok then
@@ -751,6 +751,36 @@ vim.lsp.config("lua_ls", {
 })
 vim.lsp.config("basedpyright", {})
 vim.lsp.config("clangd", {})
+vim.lsp.config("roslyn_ls", {
+	capabilities = {
+		textDocument = {
+			diagnostic = {
+				dynamicRegistration = true,
+			},
+		},
+	},
+	settings = {
+		["csharp|background_analysis"] = {
+			dotnet_analyzer_diagnostics_scope = "fullSolution",
+			dotnet_compiler_diagnostics_scope = "fullSolution",
+		},
+		["csharp|completion"] = {
+			dotnet_show_name_completion_suggestions = true,
+			dotnet_show_completion_items_from_unimported_namespaces = true,
+			dotnet_provide_regex_completions = true,
+		},
+		["csharp|inlay_hints"] = {
+			csharp_enable_inlay_hints_for_implicit_object_creation = true,
+			csharp_enable_inlay_hints_for_implicit_variable_types = true,
+			csharp_enable_inlay_hints_for_lambda_parameter_types = true,
+			csharp_enable_inlay_hints_for_types = true,
+			dotnet_enable_inlay_hints_for_parameters = true,
+		},
+		["csharp|code_lens"] = {
+			dotnet_enable_references_code_lens = true,
+		},
+	},
+})
 
 vim.g.rustaceanvim = {
 	server = {
@@ -758,17 +788,7 @@ vim.g.rustaceanvim = {
 	},
 }
 
-local lsp_servers = { "lua_ls", "basedpyright", "clangd" }
-
-if vim.fn.executable("dotnet") == 1 then
-	table.insert(lsp_servers, "roslyn_ls")
-else
-	vim.notify_once(
-		"dotnet not found — roslyn_ls (C#) disabled. Install dotnet-sdk + roslyn-language-server.",
-		vim.log.levels.WARN
-	)
-end
-
+local lsp_servers = { "lua_ls", "basedpyright", "clangd", "roslyn_ls" }
 vim.lsp.enable(lsp_servers)
 
 -- ============================================================================

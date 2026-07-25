@@ -305,6 +305,20 @@ setup_containers() {
   systemctl --user enable --now buildkit
 }
 
+setup_dev_env() {
+  if command -v dotnet &>/dev/null; then
+    run_step "dotnet tool install --global roslyn-language-server --prerelease 2>/dev/null || dotnet tool update --global roslyn-language-server --prerelease" "installing roslyn-language-server (dotnet global tool)"
+  else
+    log_warn "dotnet SDK not found — skipping Roslyn install. Run dev-extras.sh first (requires sudo for pacman)."
+  fi
+
+  if command -v containerd &>/dev/null || command -v nerdctl &>/dev/null; then
+    run_step setup_containers "setting up containers (containerd + buildkit rootless)"
+  else
+    log_warn "containerd/nerdctl not found — skipping container setup. Run dev-extras.sh first (requires sudo for pacman)."
+  fi
+}
+
 reload_all() {
   run_step update_bashrc "updating bashrc"
   run_step update_yazi_desktop "installing yazi desktop entry"
@@ -331,7 +345,7 @@ usage() {
   echo "  $SCRIPT_NAME update-wallpaper --path [path]"
   echo "  $SCRIPT_NAME remove-wallpaper --name [name]"
   echo "  $SCRIPT_NAME switch-theme-mode"
-  echo "  $SCRIPT_NAME setup-containers"
+  echo "  $SCRIPT_NAME setup-dev-env"
 }
 
 case "$SL_THEME_MODE" in
@@ -392,9 +406,9 @@ case "${1:-}" in
     shift
     run_step switch_theme_mode "switching theme mode"
     ;;
-  setup-containers)
+  setup-dev-env)
     shift
-    run_step setup_containers "setting up containers"
+    run_step setup_dev_env "setting up dev environment"
     ;;
   *)
     usage
