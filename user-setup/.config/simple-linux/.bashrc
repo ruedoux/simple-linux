@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Fix environment when su is used without '-' (preserves calling user's HOME)
+_CURRENT_USER="$(id -un 2>/dev/null)"
+_CURRENT_HOME="$(getent passwd "$_CURRENT_USER" 2>/dev/null | cut -d: -f6)"
+if [ -n "$_CURRENT_HOME" ] && [ "$HOME" != "$_CURRENT_HOME" ]; then
+    export HOME="$_CURRENT_HOME"
+    cd "$HOME" 2>/dev/null || true
+    # Clear inherited XDG vars so they default to $HOME-based paths
+    unset XDG_CACHE_HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME 2>/dev/null
+fi
+unset _CURRENT_USER _CURRENT_HOME
+
 [[ $- != *i* ]] && return
 PS1='[\u@\h \W]\$ '
 
