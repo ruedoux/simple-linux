@@ -120,6 +120,15 @@ enable_system_services() {
   sudo systemctl enable --now $SYSTEMD_SYSTEM_SERVICES
 }
 
+configure_wireless_regdom() {
+  if [[ -z "${WIRELESS_REGDOM:-}" ]]; then
+    log_warn "WIRELESS_REGDOM not set, skipping wireless regulatory domain configuration"
+    return 0
+  fi
+  echo "WIRELESS_REGDOM=\"${WIRELESS_REGDOM}\"" | sudo tee /etc/conf.d/wireless-regdom > /dev/null
+  log_ok "Wireless regulatory domain set to '${WIRELESS_REGDOM}'"
+}
+
 verify_secure_boot_mode() {
   if ! sudo sbctl status 2>/dev/null | grep -qi "setup mode.*enabled"; then
     log_err "Secure Boot is NOT in Setup Mode."
@@ -174,23 +183,23 @@ main() {
   prime_sudo_cache
 
   # Desktop environment
-  run_step sync_pacman                  "synchronizing pacman"
-  run_step enable_multilib              "enabling multilib repository"
+  run_step sync_pacman "synchronizing pacman"
+  run_step enable_multilib "enabling multilib repository"
   run_step detect_and_install_gpu_drivers "detecting and installing GPU drivers"
-  run_step install_gaming_packages      "installing gaming packages"
-  run_step create_desktop_users         "creating desktop users"
-  run_step install_hyprland         "installing hyprland"
-  run_step install_packages         "installing packages"
-  run_step install_dev_extras           "installing development extras"
-  run_step enable_system_services   "enabling system services"
+  run_step install_gaming_packages "installing gaming packages"
+  run_step create_desktop_users "creating desktop users"
+  run_step install_hyprland "installing hyprland"
+  run_step install_packages "installing packages"
+  run_step install_dev_extras "installing development extras"
+  run_step enable_system_services "enabling system services"
+  run_step configure_wireless_regdom "configuring wireless regulatory domain"
 
   # Secure Boot
-  run_step verify_secure_boot_mode  "checking Secure Boot Setup Mode"
-  run_step setup_keys               "generating and enrolling Secure Boot keys"
-  run_step sign_all_images          "signing all EFI images"
+  run_step verify_secure_boot_mode "checking Secure Boot Setup Mode"
+  run_step setup_keys "generating and enrolling Secure Boot keys"
+  run_step sign_all_images "signing all EFI images"
 
   cleanup_passwords
-  sudo sed -i 's/^#\s*\(WIRELESS_REGDOM="PL"\)/\1/' /etc/conf.d/wireless-regdom ## TODO put it in right place and make configurable in settings
 
   pause_before_reboot "System setup"
 }
