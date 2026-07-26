@@ -11,6 +11,17 @@ verify_checked
 
 sync_pacman() { sudo pacman -Syu --noconfirm; }
 
+enable_multilib() {
+  if [[ "$ENABLE_GAMING" != "true" ]]; then
+    return 0
+  fi
+
+  log_step "Enabling [multilib] repository"
+  sudo sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' /etc/pacman.conf
+  log_ok "[multilib] repository enabled"
+  sudo pacman -Syu --noconfirm
+}
+
 detect_and_install_gpu_drivers() {
   local gpu_vendors drivers=""
   gpu_vendors=$(lspci -mm 2>/dev/null | grep -iE '"(VGA compatible controller|3D controller|Display controller)"' | cut -d '"' -f4 || true)
@@ -23,6 +34,17 @@ detect_and_install_gpu_drivers() {
   fi
   if echo "$gpu_vendors" | grep -qi "nvidia"; then
     drivers="$drivers ${GPU_NVIDIA_DRIVERS}"
+  fi
+
+  # Install matching lib32 Vulkan driver (resolves Steam's lib32-vulkan-driver dependency)
+  if [[ "$ENABLE_GAMING" == "true" ]]; then
+    if echo "$gpu_vendors" | grep -qi "nvidia"; then
+      drivers="$drivers ${GPU_NVIDIA_LIB32_VULKAN}"
+    elif echo "$gpu_vendors" | grep -qiE "amd|advanced micro|ati"; then
+      drivers="$drivers ${GPU_AMD_LIB32_VULKAN}"
+    elif echo "$gpu_vendors" | grep -qi "intel"; then
+      drivers="$drivers ${GPU_INTEL_LIB32_VULKAN}"
+    fi
   fi
 
   if [[ -n "$drivers" ]]; then
@@ -39,6 +61,37 @@ detect_and_install_gpu_drivers() {
 install_hyprland() { sudo pacman -S --noconfirm --needed $HYPRLAND_PACKAGES; }
 # shellcheck disable=SC2086
 install_packages() { sudo pacman -S --noconfirm --needed $OTHER_PACKAGES; }
+
+install_gaming_packages() {
+  if [[ "$ENABLE_GAMING" != "true" ]]; then
+    return 0
+  fi
+  # shellcheck disable=SC2086
+  sudo pacman -S --noconfirm --needed $GAMING_PACKAGES
+  # shellcheck disable=SC2086
+  sudo systemctl enable --now $GAMING_SERVICES
+
+  # Hide gaming .desktop files from non-gaming users
+  local entry username user_apps
+  for entry in "${DESKTOP_USERS[@]}"; do
+    username="${entry%%:*}"
+    if [[ " ${GAMING_USERS} " == *" ${username} "* ]]; then
+      continue
+    fi
+    user_apps="/home/${username}/.local/share/applications"
+    sudo -u "$username" mkdir -p "$user_apps"
+    printf '[Desktop Entry]\nType=Application\nName=Steam\nNoDisplay=true\n' | \
+      sudo -u "$username" tee "$user_apps/steam.desktop" > /dev/null
+  done
+}
+
+install_dev_extras() {
+  if [[ "$ENABLE_DEV_EXTRAS" != "true" ]]; then
+    return 0
+  fi
+  # shellcheck disable=SC2086
+  sudo pacman -S --noconfirm --needed $DEV_EXTRA_PACKAGES
+}
 
 create_desktop_users() {
   local entry username groups
@@ -65,20 +118,6 @@ create_desktop_users() {
 enable_system_services() {
   # shellcheck disable=SC2086
   sudo systemctl enable --now $SYSTEMD_SYSTEM_SERVICES
-
-  local entry username uid
-  for entry in "${DESKTOP_USERS[@]}"; do
-    username="${entry%%:*}"
-
-    if ! id -u "$username" &>/dev/null; then
-      log_warn "User '${username}' not found, skipping user services"
-      continue
-    fi
-
-    uid="$(id -u "$username")"
-    sudo loginctl enable-linger "$username"
-    sudo systemctl start "user@${uid}.service"
-  done
 }
 
 verify_secure_boot_mode() {
@@ -136,10 +175,13 @@ main() {
 
   # Desktop environment
   run_step sync_pacman                  "synchronizing pacman"
+  run_step enable_multilib              "enabling multilib repository"
   run_step detect_and_install_gpu_drivers "detecting and installing GPU drivers"
+  run_step install_gaming_packages      "installing gaming packages"
   run_step create_desktop_users         "creating desktop users"
   run_step install_hyprland         "installing hyprland"
   run_step install_packages         "installing packages"
+  run_step install_dev_extras           "installing development extras"
   run_step enable_system_services   "enabling system services"
 
   # Secure Boot

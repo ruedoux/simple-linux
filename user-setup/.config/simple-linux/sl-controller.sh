@@ -295,7 +295,24 @@ update_python() {
 update_flatpacks() {
   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
   flatpak update
-  flatpak install flathub app.zen_browser.zen
+
+  # Install per-user flatpak extras from config.env
+  if [[ -n "${SL_USER_FLATPAK_PACKAGES:-}" ]]; then
+    local pkg
+    for pkg in $SL_USER_FLATPAK_PACKAGES; do
+      flatpak install flathub --user -y "$pkg"
+    done
+  fi
+
+  # Apply per-app overrides from config.env
+  if [[ -n "${SL_USER_FLATPAK_OVERRIDES:-}" ]]; then
+    local entry app_id args
+    for entry in $SL_USER_FLATPAK_OVERRIDES; do
+      app_id="${entry%%:*}"
+      args="${entry#*:}"
+      flatpak override "$app_id" --user $args
+    done
+  fi
 }
 
 setup_containers() {
@@ -309,13 +326,13 @@ setup_dev_env() {
   if command -v dotnet &>/dev/null; then
     run_step "dotnet tool install --global roslyn-language-server --prerelease 2>/dev/null || dotnet tool update --global roslyn-language-server --prerelease" "installing roslyn-language-server (dotnet global tool)"
   else
-    log_warn "dotnet SDK not found — skipping Roslyn install. Run dev-extras.sh first (requires sudo for pacman)."
+    log_warn "dotnet SDK not found — skipping Roslyn install. Set ENABLE_DEV_EXTRAS=true in settings.env and re-run the system setup."
   fi
 
   if command -v containerd &>/dev/null || command -v nerdctl &>/dev/null; then
     run_step setup_containers "setting up containers (containerd + buildkit rootless)"
   else
-    log_warn "containerd/nerdctl not found — skipping container setup. Run dev-extras.sh first (requires sudo for pacman)."
+    log_warn "containerd/nerdctl not found — skipping container setup. Set ENABLE_DEV_EXTRAS=true in settings.env and re-run the system setup."
   fi
 }
 

@@ -34,6 +34,15 @@ copy_dots() {
     fi
     log_ok "Synced .config/$name"
   done
+
+  # Copy top-level files (e.g. user-dirs.dirs) that aren't inside subdirectories
+  for file in "$src"/*; do
+    [ -f "$file" ] || continue
+    local fname
+    fname="$(basename "$file")"
+    cp "$file" "$HOME/.config/$fname"
+    log_ok "Synced .config/$fname"
+  done
 }
 
 start_user_services() {

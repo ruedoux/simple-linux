@@ -7,6 +7,16 @@
 - **[system-setup/](system-setup/)** — Root-level Arch installer: LUKS2 + Btrfs + UKI + Secure Boot + Hyprland
 - **[user-setup/](user-setup/)** — Per-user dotfiles, theming engine, custom package manager, and CLI toolkit (never needs sudo)
 
+## Preview
+
+<p align="center">
+  <img src="preview-light.webp" width="48%" alt="Simple Linux — Light theme">
+  &nbsp;
+  <img src="preview-dark.webp" width="48%" alt="Simple Linux — Dark theme">
+</p>
+
+<p align="center"><em>Material Design 3 theming with light/dark mode switching, powered by matugen</em></p>
+
 ## Feature Highlights
 
 - **Full disk encryption** — LUKS2 on Btrfs subvolumes (`@`, `@home`, `@swap`, `@var_log`, `@var_cache_pacman`)
