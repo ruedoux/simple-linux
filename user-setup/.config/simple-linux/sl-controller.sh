@@ -293,7 +293,7 @@ update_python() {
 }
 
 update_flatpacks() {
-  flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak update
 
   # Install per-user flatpak extras from config.env
