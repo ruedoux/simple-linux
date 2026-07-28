@@ -288,7 +288,7 @@ remote_backup() {
   local escaped_config_path=$(printf '%q' "$config_destination_path")
 
   info "Running backup on server '$server_name'"
-  ssh "$server_name" "${escaped_script_path} backup --config ${escaped_config_path}; rc=\$?; rm -f ${escaped_script_path} ${escaped_config_path}; exit \$rc"
+  ssh "$server_name" "${escaped_script_path} --config ${escaped_config_path}; rc=\$?; rm -f ${escaped_script_path} ${escaped_config_path}; exit \$rc"
 }
 
 remote_backup_entry() {
