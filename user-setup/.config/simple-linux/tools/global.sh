@@ -24,7 +24,7 @@ toolset.require_var() {
 info() { echo -e "${BLUE_COLOR}[INFO]${NO_COLOR} $@"; }
 error() { echo -e "${RED_COLOR}[ERROR]${NO_COLOR} $@"; }
 debug() {
-  if [[ -n "${TOOLSET_DEBUG:-}" ]]; then
+  if [[ "${TOOLSET_DEBUG:-}" == "true" ]]; then
     echo -e "${PURPLE_COLOR}[DEBUG]${NO_COLOR} $@"
   fi
 }
@@ -64,7 +64,9 @@ toolset.verify_config() {
   local config_path="$1"
   shift
   for var in "$@"; do
-    grep -q "^$var=" "$config_path" || { error "Variable $var not found in $config_path" >&2; return 1; }
+    # Use awk for literal matching to avoid regex injection
+    awk -F= -v name="$var" '$1 == name { found=1; exit } END { exit !found }' "$config_path" \
+      || { error "Variable $var not found in $config_path" >&2; return 1; }
   done
 }
 
@@ -95,7 +97,14 @@ toolset.update_config_variable() {
     return 1
   fi
 
-  sed -i "s|^${var_name}=.*|${var_name}=\"${var_value}\"|" "$config_file_path"
+  # Use awk for safe regex-free substitution
+  local tmp_file
+  tmp_file="$(mktemp)"
+  awk -v name="$var_name" -v value="$var_value" '
+    BEGIN { FS = OFS = "=" }
+    $1 == name { $0 = name "=\"" value "\"" }
+    { print }
+  ' "$config_file_path" > "$tmp_file" && mv "$tmp_file" "$config_file_path"
 }
 
 toolset.verify_variable_exists() {
