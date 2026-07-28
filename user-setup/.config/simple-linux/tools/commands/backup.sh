@@ -147,7 +147,9 @@ backup() {
   local includes_file=$(mktemp)
   local excludes_file=$(mktemp)
 
-  local lock_file="/tmp/backup-$(echo "$repo_path" | sha256sum | cut -d' ' -f1).lock"
+  local lock_dir="${HOME}/.cache/sl-backup/locks"
+  mkdir -p "$lock_dir"
+  local lock_file="${lock_dir}/backup-$(echo "$repo_path" | sha256sum | cut -d' ' -f1).lock"
   exec 9>"$lock_file"
   if ! flock -n 9; then
     error "Another backup is already running for repo '$repo_path'. Exiting."
