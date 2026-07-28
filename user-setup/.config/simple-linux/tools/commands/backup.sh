@@ -155,7 +155,7 @@ backup() {
     error "Another backup is already running for repo '$repo_path'. Exiting."
     exit 1
   fi
-  trap 'rm -f "$includes_file" "$excludes_file"; exec 9>&-; rm -f "$lock_file"' EXIT
+  trap 'rm -f "${includes_file:-}" "${excludes_file:-}"; exec 9>&-; rm -f "${lock_file:-}"' EXIT
 
   jq -r '.includes[]' "$config_file_path" > "$includes_file"
   jq -r '.excludes[]' "$config_file_path" > "$excludes_file"
