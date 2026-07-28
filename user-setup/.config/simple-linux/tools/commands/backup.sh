@@ -72,8 +72,8 @@ ensure_repo_exists() {
       exit 1
     fi
   else
-    if ! restic -r "$repo_path" cat config >/dev/null 2>&1; then
-      error "'$repo_path' exists but is not a valid restic repository"
+    if ! restic -r "$repo_path" cat config 2>&1; then
+      error "'$repo_path' could not be validated — check password or repo integrity"
       exit 1
     fi
   fi
@@ -160,10 +160,6 @@ backup() {
 
   debug "Includes content:\n$(cat "$includes_file")"
   debug "Excludes content:\n$(cat "$excludes_file")"
-  ensure_repo_exists "$repo_path"
-
-  info "Running backup to '$repo_path'"
-
   if ! [[ -n "$RESTIC_PASSWORD" ]]; then
     if jq -e "has(\"key\")" "$config_file_path" > /dev/null; then
       export RESTIC_PASSWORD=$(jq -r '.["key"]' "$config_file_path")
@@ -175,6 +171,10 @@ backup() {
       exit 1
     fi
   fi
+
+  ensure_repo_exists "$repo_path"
+
+  info "Running backup to '$repo_path'"
 
   restic -r "$repo_path" backup \
     --files-from "$includes_file" \
@@ -488,29 +488,38 @@ pull_backup_entry() {
   pull_backup "$local_config_file_path" "$destination_config_file_path" "$repo_name"
 }
 
-case "$1" in
-  backup)
-    shift
-    backup_entry "$@"
-    ;;
-  remote-backup)
-    shift
-    remote_backup_entry "$@"
-    ;;
-  push-backup)
-    shift
-    push_backup_entry "$@"
-    ;;
-  pull-backup)
-    shift
-    pull_backup_entry "$@"
-    ;;
-  --help|-h)
-    echo "Usage: $SCRIPT_NAME [backup|remote-backup|push-backup|pull-backup]"
-    exit 0
-    ;;
-  *)
-    echo "Usage: $SCRIPT_NAME [backup|remote-backup|push-backup|pull-backup]"
-    exit 1
-    ;;
-esac
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --remote)
+            shift
+            remote_backup_entry "$@"
+            exit $?
+            ;;
+        --push)
+            shift
+            push_backup_entry "$@"
+            exit $?
+            ;;
+        --pull)
+            shift
+            pull_backup_entry "$@"
+            exit $?
+            ;;
+        -h|--help)
+            echo "Usage: $SCRIPT_NAME [--remote|--push|--pull] [args...]"
+            echo ""
+            echo "  (no flag)       Local backup:   --config <file>"
+            echo "  --remote        Remote backup:   --config <file>"
+            echo "  --push          Push repo:       --local-config <f> --destination-config <f> --repo <name>"
+            echo "  --pull          Pull repo:       --local-config <f> --destination-config <f> --repo <name>"
+            echo "  --dry-run, -n                    Simulate without making changes"
+            exit 0
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+# Default: local backup
+backup_entry "$@"
