@@ -105,6 +105,7 @@ create_desktop_users() {
     fi
 
     sudo useradd -mG "$groups" "$username"
+    sudo chmod 0700 /home/"$username"
 
     local key="SETUP_PASSWORD_${username}"
     local user_password="${!key:-}"

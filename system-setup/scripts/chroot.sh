@@ -28,6 +28,7 @@ enable_network_services() {
 
 create_admin_user() {
   useradd -mG wheel "$ADMIN_USER"
+  chmod 0700 /home/"$ADMIN_USER"
 
   local key="SETUP_PASSWORD_${ADMIN_USER}"
   local admin_password="${!key:-}"
