@@ -8,7 +8,7 @@ RESET='\033[0m'
 LOG_FILE="/tmp/arch-install.log"
 
 setup_logging() {
-  touch "$LOG_FILE"
+  > "$LOG_FILE"
   chmod 600 "$LOG_FILE"
   exec > >(tee -a "$LOG_FILE") 2>&1
   log_step "Logging to ${LOG_FILE}"
@@ -107,7 +107,12 @@ collect_passwords() {
     for entry in "${DESKTOP_USERS[@]}"; do
       local username="${entry%%:*}"
       if [[ "$username" != "$ADMIN_USER" ]]; then
-        expected+=("SETUP_PASSWORD_${username}")
+        # Skip password collection for users that already exist (re-run safety)
+        if id -u "$username" &>/dev/null; then
+          log_ok "User '${username}' already exists, skipping password collection"
+        else
+          expected+=("SETUP_PASSWORD_${username}")
+        fi
       fi
     done
   fi
@@ -182,8 +187,15 @@ prime_sudo_cache() {
   local key="SETUP_PASSWORD_${ADMIN_USER}"
   local admin_pass="${!key:-}"
   if [[ -n "$admin_pass" ]]; then
-    echo "$admin_pass" | sudo -S -v 2>/dev/null
+    echo "$admin_pass" | sudo -S -v 2>/dev/null || true
     log_ok "Sudo credentials cached for ${ADMIN_USER}"
+  fi
+  # Verify sudo actually works non-interactively — if not, fail fast with a clear error
+  if ! sudo -n true 2>/dev/null; then
+    log_err "sudo requires a password or cached credentials."
+    log_err "Export SETUP_PASSWORD_${ADMIN_USER} with your admin password, or run from a terminal."
+    log_err "Example: export SETUP_PASSWORD_${ADMIN_USER}='your-password'"
+    exit 1
   fi
 }
 

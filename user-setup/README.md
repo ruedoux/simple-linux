@@ -22,19 +22,19 @@ Central management hub at `~/.config/simple-linux/sl-controller.sh`:
 
 | Command | Description |
 |---|---|
-| `reload-all` | Full environment refresh: bashrc → packages → flatpaks → wallpaper → monitors → themes |
+| `reload-all` | Full environment refresh: bashrc → yazi desktop → packages → source bashrc → python → flatpaks → wallpaper → monitors → themes |
 | `update-packages` | Installs/updates all packages from `packages/` |
-| `update-flatpacks` | Adds Flathub remote, updates all, installs Zen Browser |
+| `update-flatpacks` | Adds Flathub remote, updates all, installs packages from `SL_USER_FLATPAK_PACKAGES`, applies `SL_USER_FLATPAK_OVERRIDES` |
 | `update-bashrc` | Rsyncs `.bashrc` to `~/.bashrc` (with `.bck` backup) |
 | `update-python` | Installs Python via pyenv, sets global version, upgrades pip |
-| `update-wallpaper --path <file>` | Set wallpaper, generate blurred variant via ImageMagick, reload hyprpaper |
+| `update-wallpaper --path <file>` | Set wallpaper, generate blurred variant via ImageMagick, reload hyprpaper, regenerate Material Design colors via matugen |
 | `remove-wallpaper --name <name>` | Delete a stored wallpaper (not the active one) |
 | `update-monitors` | Query `hyprctl`, regenerate monitor/workspace/hyprpaper config from templates |
 | `update-themes` | Set GTK/Qt gsettings, render all non-monitor templates, run matugen, reload Quickshell |
 | `switch-theme-mode` | Toggles `dark ↔ light` in `config.env`, re-themes everything |
 | `config` | Opens `config.env` in `$EDITOR` |
 | `reload-quickshell` | Kills and restarts the Quickshell desktop shell |
-| `setup-containers` | Initializes containerd rootless + BuildKit, enables user services |
+| `setup-dev-env` | Initializes containerd rootless + BuildKit, enables user services; also installs Roslyn LSP if dotnet is available |
 
 ---
 
@@ -45,11 +45,11 @@ All user-facing settings in one file (`~/.config/simple-linux/config.env`):
 ```bash
 SL_FONT="CaskaydiaCove Nerd Font Mono"
 SL_FONT_SIZE="12"
-SL_MAIN_MONITOR="DP-1"              # leave empty for highest-resolution display
-SL_MONITOR_ORDER="HDMI-A-1:0.67,DP-1"  # NAME[:SCALE][:DIRECTION], comma-separated
-SL_UI_SCALE="2"                     # UI/font scale (does not affect monitor resolution)
+SL_MAIN_MONITOR="DP-1" # leave empty for highest-resolution display
+SL_MONITOR_ORDER="HDMI-A-1:0.67,DP-1" # NAME[:SCALE][:DIRECTION], comma-separated
+SL_UI_SCALE="2" # UI/font scale (does not affect monitor resolution)
 SL_TERMINAL="kitty"
-SL_THEME_MODE="dark"                # dark | light
+SL_THEME_MODE="dark" # dark | light
 SL_ICON_THEME="candy-icons"
 SL_HYPRCURSOR_THEME="rose-pine-hyprcursor"
 SL_HYPRCURSOR_SIZE="48"
@@ -61,6 +61,8 @@ SL_CONTAINERS_PERSISTENT_DIR="/shared/containers-persistent"
 SL_CONTAINERS_CONFIG_FILE="${SL_CONTAINERS_DIR}/config.json"
 SL_CONTAINERS_COMPOSE_FILE="${SL_CONTAINERS_DIR}/compose.yaml"
 SL_OPENCODE_DIR="/shared/opencode"
+SL_USER_FLATPAK_PACKAGES="app.zen_browser.zen" # Per-user flatpak packages
+SL_USER_FLATPAK_OVERRIDES="" # Per-app flatpak overrides
 ```
 
 Change any value, then run `sl-controller.sh update-themes` to apply. A full `reload-all` picks up everything.
@@ -133,8 +135,9 @@ sl-install-package.sh list                              # List installed package
 | `shellcheck` 0.11.0-1 | Static analysis for shell scripts | `~/.local/bin/` |
 | `rose-pine-hyprcursor` | Rose Pine cursor theme | `~/.local/share/icons/` |
 | `pyenv` | Python version manager | `~/.pyenv/` |
-| `oh-my-posh` | Shell prompt themer | `~/.local/bin/` |
+| `oh-my-posh-bin` | Shell prompt themer (binary) | `~/.local/bin/` |
 | `candy-icons` | Candy icon theme | `~/.local/share/icons/` |
+| `dragon-drop` 1.2.0-1 | Drag-and-drop utility | `~/.local/bin/` |
 
 ---
 
@@ -144,7 +147,7 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 
 | Subcommand | Description |
 |---|---|
-| `backup` | Restic backup/restore (local, remote, push, pull). Uses `SL_CONTAINERS_CONFIG_FILE` for repository config. |
+| `backup` | Restic backup/restore (local, remote, push, pull). Accepts a `--config <file>` flag pointing to a standalone JSON config with repository details. |
 | `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with health checks). |
 | `git-switch` | Switch git accounts and SSH keys per session. Reads profiles from a configurable directory. |
 | `maintanance` | Btrfs maintenance, port listing, dangling dependency checks. |
@@ -158,7 +161,7 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 
 | Component | Role |
 |---|---|
-| **Hyprland** | Lua-based Wayland compositor. Modular config split across `env`, `keybinds`, `colors`, `rules`, `default-apps`, `user-overrides`. |
+| **Hyprland** | Lua-based Wayland compositor. Modular config split across `env`, `env-overrides`, `keybinds`, `colors`, `rules`, `monitors`, `workspaces`, `default-apps`, `user-overrides`. |
 | **Quickshell** | Custom Qt/QML desktop shell — status bar (CPU, memory, network, volume), notification center, app menu with system actions, system tray, wallpaper browser. |
 | **Hyprlock** | Lock screen with blurred wallpaper and Material Design colors (`$primary`, `$on_primary`, `$error`, `$shadow`). |
 | **Hypridle** | Idle daemon: dim screen → lock → DPMS off. |
@@ -166,7 +169,12 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 | **Kitty** | GPU-accelerated terminal emulator (config generated from template with font and size from `config.env`). |
 | **Yazi** | Terminal file manager with desktop entry for `kitty --class yazi -e yazi`. |
 | **Fastfetch** | System info displayed on login. |
+| **feh** | Lightweight image viewer. |
+| **mpv** | Media player with custom config. |
+| **Neovim** | Fully configured text editor (Lua init, plugin manager, LSP support). |
+| **Oh My Posh** | Shell prompt themer, colored via matugen template. |
 | **PipeWire** | Audio server. |
-| **Kvantum** | SVG-based Qt theming (Catppuccin Mocha/Latte Mauve variants). |
+| **Qt5ct / Qt6ct** | Qt5/Qt6 color scheme configuration, colors generated by matugen. |
+| **Kvantum** | SVG-based Qt theming engine (Catppuccin Mocha/Latte Mauve variants). |
 
 GTK theming uses `adw-gtk3` (dark/light toggled by `SL_THEME_MODE`). Both GTK3 and GTK4 import `colors.css` generated by matugen.

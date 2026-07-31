@@ -6,7 +6,7 @@ A fully automated Arch Linux install & configuration system. Takes a bare-metal 
 
 | Feature | Details |
 |---|---|
-| **Disk layout** | GPT: 1 GiB EFI + remaining as LUKS2 |
+| **Disk layout** | GPT: 2 GiB EFI + remaining as LUKS2 |
 | **Encryption** | LUKS2 on root partition (`/dev/mapper/cryptroot`) |
 | **Filesystem** | Btrfs with subvolumes: `@`, `@home`, `@swap`, `@var_log`, `@var_cache_pacman` |
 | **Boot** | Unified Kernel Images (UKI) via mkinitcpio, booted directly via UEFI efibootmgr entries |
@@ -39,6 +39,8 @@ Edit `settings.env`. The critical settings are:
 - `CHECKED` — must be `"true"` for scripts to run (safety gate)
 - `DRIVE` — target disk (e.g. `/dev/nvme0n1`, `/dev/sda`)
 - `TIMEZONE`, `HOSTNAME`, `ADMIN_USER` — personalize these
+- `ENABLE_GAMING` — set to `"true"` to install Steam, gamescope, lact, and enable gaming group restrictions
+- `ENABLE_DEV_EXTRAS` — set to `"true"` to install Docker, dbeaver, vscode, lsp servers, postman, and additional development tools
 
 ### 3. Provide passwords
 
