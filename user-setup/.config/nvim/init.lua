@@ -60,6 +60,8 @@ vim.opt.conceallevel = 2 -- obsidian requirement
 vim.opt.concealcursor = "" -- do not hide cursorline in markup
 vim.opt.synmaxcol = 300 -- syntax highlighting limit
 vim.opt.fillchars = { eob = " " } -- hide "~" on empty lines
+vim.opt.showtabline = 2 -- always show tabline (barbar)
+vim.g.barbar_auto_setup = false -- disable auto-setup, configure manually
 
 local undodir = vim.fn.expand("~/.vim/undodir")
 if
@@ -282,6 +284,12 @@ vim.keymap.set({ "n", "v" }, "<leader>x", '"_d', { desc = "Delete without yankin
 vim.keymap.set("n", "<leader>bn", ":bnext<CR>", { desc = "Next buffer" })
 vim.keymap.set("n", "<leader>bp", ":bprevious<CR>", { desc = "Previous buffer" })
 
+-- barbar.nvim buffer navigation
+vim.keymap.set("n", "<A-,>", "<Cmd>BufferPrevious<CR>", { desc = "Previous buffer" })
+vim.keymap.set("n", "<A-.>", "<Cmd>BufferNext<CR>", { desc = "Next buffer" })
+vim.keymap.set("n", "<A-c>", "<Cmd>BufferClose<CR>", { desc = "Close buffer" })
+vim.keymap.set("n", "<C-p>", "<Cmd>BufferPick<CR>", { desc = "Buffer picker" })
+
 vim.keymap.set("n", "<leader>sv", ":vsplit<CR>", { desc = "Split window vertically" })
 vim.keymap.set("n", "<leader>sh", ":split<CR>", { desc = "Split window horizontally" })
 vim.keymap.set("n", "<C-Up>", ":resize +2<CR>", { desc = "Increase window height" })
@@ -410,6 +418,8 @@ vim.pack.add({
 		version = vim.version.range("1.*"),
 	},
 	"https://github.com/L3MON4D3/LuaSnip",
+	"https://github.com/romgrk/barbar.nvim",
+	"https://github.com/nvim-tree/nvim-web-devicons",
 })
 
 -- ============================================================================
@@ -549,6 +559,17 @@ require("mini.diff").setup({
 
 require("mini.git").setup({})
 
+-- barbar.nvim tabline (clickable buffer tabs)
+require("barbar").setup({
+	clickable = true,
+	icons = {
+		filetype = { enabled = true, custom_colors = false },
+		buffer_index = false,
+		buffer_number = false,
+		button = "",
+	},
+})
+
 local MiniDiff = require("mini.diff")
 vim.keymap.set("n", "]h", function()
 	MiniDiff.goto_hunk("next")
@@ -641,7 +662,7 @@ local function lsp_on_attach(ev)
 	local opts = { noremap = true, silent = true, buffer = bufnr }
 
 	vim.keymap.set("n", "<leader>gd", function()
-		require("fzf-lua").lsp_definitions({ jump_to_single_result = true })
+		require("fzf-lua").lsp_definitions({ jump1 = true })
 	end, opts)
 
 	vim.keymap.set("n", "<leader>gD", vim.lsp.buf.definition, opts)

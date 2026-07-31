@@ -5,8 +5,12 @@ import QtQuick.Layouts
 import ".."
 
 PanelWindow {
+  id: barWindow
   property var modelData
+  property alias isVisible: barWindow.visible
   screen: modelData
+
+  visible: EventBus.barVisible
 
   anchors {
     top: true
