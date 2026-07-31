@@ -137,7 +137,7 @@ create_desktop_users() {
     groups="${entry#*:}"
     # Validate groups exist before adding — warn on invalid, don't silently skip
     local valid_groups=()
-    for grp in $groups; do
+    for grp in ${groups//,/ }; do
       if getent group "$grp" &>/dev/null; then
         valid_groups+=("$grp")
       else
