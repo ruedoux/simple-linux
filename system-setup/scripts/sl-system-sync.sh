@@ -1,13 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
-SETUP_SCRIPT_DIR="${SETUP_SCRIPT_DIR:-$(dirname "$SCRIPT_DIR")}"
+# Standalone sudo command — sources system-wide truth from /etc
+# Installed to /usr/local/bin/sl-system-sync during USB setup.
+# Re-run to apply changes after editing /etc/simple-linux/settings.env.
 
-source "$SETUP_SCRIPT_DIR/settings.env"
-source "$SETUP_SCRIPT_DIR/.lib.sh"
-
-verify_checked
+source /etc/simple-linux/settings.env
+source /etc/simple-linux/lib.sh
 
 sync_pacman() { sudo pacman -Syu --noconfirm; }
 

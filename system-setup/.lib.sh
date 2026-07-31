@@ -92,30 +92,7 @@ verify_checked() {
 #   SETUP_ROOT_PASSWORD          – root password (empty = lock root)
 #   SETUP_PASSWORD_<username>    – per-user password
 collect_passwords() {
-  local phase="${1:-base}"
-
-  local expected=()
-
-  if [[ "$phase" == "base" ]]; then
-    expected+=("SETUP_LUKS_PASSWORD")
-    expected+=("SETUP_ROOT_PASSWORD")
-  fi
-
-  if [[ "$phase" == "base" ]]; then
-    expected+=("SETUP_PASSWORD_${ADMIN_USER}")
-  elif [[ "$phase" == "post-install" ]]; then
-    for entry in "${DESKTOP_USERS[@]}"; do
-      local username="${entry%%:*}"
-      if [[ "$username" != "$ADMIN_USER" ]]; then
-        # Skip password collection for users that already exist (re-run safety)
-        if id -u "$username" &>/dev/null; then
-          log_ok "User '${username}' already exists, skipping password collection"
-        else
-          expected+=("SETUP_PASSWORD_${username}")
-        fi
-      fi
-    done
-  fi
+  local expected=("SETUP_LUKS_PASSWORD" "SETUP_ROOT_PASSWORD" "SETUP_PASSWORD_${ADMIN_USER}")
 
   local missing=false
   for key in "${expected[@]}"; do

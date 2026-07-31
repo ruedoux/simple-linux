@@ -217,6 +217,14 @@ copy_repository() {
   chown -R root:root "/mnt${SYSTEM_WIDE_DEST}"
 }
 
+install_system_files() {
+  mkdir -p /mnt/etc/simple-linux /mnt/usr/local/bin
+  install -m 644 "$SETUP_SCRIPT_DIR/settings.env"               /mnt/etc/simple-linux/settings.env
+  install -m 755 "$SCRIPT_DIR/sl-system-sync.sh"               /mnt/usr/local/bin/sl-system-sync
+  install -m 644 "$SETUP_SCRIPT_DIR/.lib.sh"                    /mnt/etc/simple-linux/lib.sh
+  log_ok "System files installed: /etc/simple-linux/ + /usr/local/bin/sl-system-sync"
+}
+
 finish_setup() {
   log_step "Unmounting filesystems"
   swapoff /mnt/swap/swapfile
@@ -251,6 +259,7 @@ main() {
   run_step setup_nftables_config "setting up nftables"
   run_step run_chroot_script "running chroot script"
   run_step copy_repository "copying repository to /opt"
+  run_step install_system_files "installing system files to /etc and /usr/local/bin"
   run_step finish_setup "finishing setup"
   cleanup_passwords
   pause_before_reboot "Initial installation"

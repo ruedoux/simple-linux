@@ -52,7 +52,6 @@ create_admin_user() {
 
 setup_uki() {
   mkdir -p /boot/EFI/Linux
-  parse_kernels
 
   for kernel in "${KERNEL_LIST[@]}"; do
     mkinitcpio -p "$kernel"
@@ -60,7 +59,6 @@ setup_uki() {
 }
 
 setup_efi_boot_entries() {
-  parse_kernels
   PART_NUM=$(lsblk -no PARTN "$EFI_PART")
   for i in "${!KERNEL_LIST[@]}"; do
     KERNEL="${KERNEL_LIST[$i]}"
@@ -89,6 +87,7 @@ main() {
   run_step setup_locale "setting up locale"
   run_step enable_network_services "enabling network services"
   run_step create_admin_user "creating admin user"
+  parse_kernels
   run_step setup_uki "setting up UKI"
   run_step seed_esp_random "seeding random seed on ESP"
   run_step setup_efi_boot_entries "setting up efi boot entries"

@@ -64,14 +64,14 @@ proceeds without further interaction.
 
 ```bash
 # Phase 1: Partition, encrypt, install base system (from Arch ISO)
-./setup.sh base
+./setup.sh
 
 # ── Machine reboots into new system, login as admin ──
 
-# Phase 2: Install Hyprland DE, then enroll Secure Boot keys
-./setup.sh post-install
+# Phase 2: Install Hyprland DE, GPU drivers, packages (from installed system)
+sudo sl-system-sync
 ```
 
-> Phase 2 is idempotent. If Secure Boot Setup Mode is not detected, the script
-> exits with an error — enable Setup Mode in your UEFI firmware and re-run.
-> Package installation and service setup are safe to repeat.
+> Phase 2 is idempotent — safe to re-run after editing /etc/simple-linux/settings.env.
+> To update system files after a git pull in /opt/simple-linux, run `sudo /opt/simple-linux/system-setup/upgrade.sh`
+> first, then `sudo sl-system-sync` to apply changes.

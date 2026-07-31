@@ -13,6 +13,12 @@ if [ -f "$SL_CONFIG_PATH" ]; then
     set -a; source "$SL_CONFIG_PATH"; set +a
 fi
 
+# Source system settings if available (system-wide truth, installed by USB setup)
+SL_SETTINGS_PATH="${SL_SETTINGS_PATH:-/etc/simple-linux/settings.env}"
+if [ -f "$SL_SETTINGS_PATH" ]; then
+    set -a; source "$SL_SETTINGS_PATH"; set +a
+fi
+
 toolset.require_var() {
     local var_name="$1"
     if [ -z "${!var_name:-}" ]; then
