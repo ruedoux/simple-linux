@@ -23,6 +23,7 @@ check_skip() { echo -e "  ~ $1"; SKIP=$((SKIP+1)); }
 section() { echo ""; echo -e "${BOLD}── $1 ──${RESET}"; }
 
 in_wheel() {
+  [[ $EUID -eq 0 ]] && return 0
   groups "$USER" 2>/dev/null | grep -q '\bwheel\b'
 }
 
@@ -225,10 +226,12 @@ check_dangling() {
   if [ -z "$broken" ]; then
     check_pass "Broken symlinks: none found"
   else
-    echo "$broken"
+    local tmpfile="/tmp/sl-health-broken-symlinks.txt"
+    echo "$broken" > "$tmpfile"
+    chmod 644 "$tmpfile"
     local count
     count=$(echo "$broken" | grep -c '^' || true)
-    check_warn "Broken symlinks: ${count} found"
+    check_warn "Broken symlinks: ${count} found → ${tmpfile}"
   fi
 }
 
