@@ -1,0 +1,3 @@
+# ShellCheck config for simple-linux
+# Sourced library files (no shebang on sourced files in CI context)
+disable=SC1090,SC1091

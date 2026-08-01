@@ -1,31 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Self contained script, does not source or require other scripts since its copied on remote host.
 set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+RESET='\033[0m'
 
 # Dependency checks
 for dep in restic jq; do
   if ! command -v "$dep" &>/dev/null; then
-    echo -e "\033[0;31m[ERROR]\033[0m '$dep' is required but not installed" >&2
+    echo -e "${RED}[ERROR]${RESET} '$dep' is required but not installed" >&2
     exit 1
   fi
 done
 
-RED_COLOR='\033[0;31m'
-GREEN_COLOR='\033[0;32m'
-BLUE_COLOR='\033[0;34m'
-PURPLE_COLOR='\033[0;35m'
-NO_COLOR='\033[0m'
 TOOLSET_DEBUG=${TOOLSET_DEBUG:-false}
 DRY_RUN=${DRY_RUN:-false}
 RESTIC_PASSWORD=${RESTIC_PASSWORD:-""}
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
-info() { echo -e "${BLUE_COLOR}[INFO]${NO_COLOR} $@"; }
-error() { echo -e "${RED_COLOR}[ERROR]${NO_COLOR} $@"; }
+info() { echo -e "${BLUE}[INFO]${RESET} $@"; }
+error() { echo -e "${RED}[ERROR]${RESET} $@"; }
 debug() {
   if [[ "${TOOLSET_DEBUG:-}" == "true" ]]; then
-    echo -e "${PURPLE_COLOR}[DEBUG]${NO_COLOR} $@"
+    echo -e "${PURPLE}[DEBUG]${RESET} $@"
   fi
 }
 
@@ -94,7 +95,7 @@ test_connection() {
 
 require_rsync() {
   if ! command -v rsync &>/dev/null; then
-    echo -e "\033[0;31m[ERROR]\033[0m 'rsync' is required but not installed" >&2
+    echo -e "${RED}[ERROR]${RESET} 'rsync' is required but not installed" >&2
     return 1
   fi
 }

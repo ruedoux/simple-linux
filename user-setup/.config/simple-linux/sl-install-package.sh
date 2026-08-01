@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m'
+RESET='\033[0m'
 
-info()    { echo -e "${GREEN}[INFO]${NC} $*"; }
-warning() { echo -e "${YELLOW}[WARN]${NC} $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+info()    { echo -e "${GREEN}[INFO]${RESET} $*"; }
+warning() { echo -e "${YELLOW}[WARN]${RESET} $*"; }
+error()   { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 
 # Overridable configuration
 : "${HOME:?HOME must be set}"

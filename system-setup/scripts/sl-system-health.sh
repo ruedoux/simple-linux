@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # Standalone sudo command — sources system-wide truth from /etc
@@ -128,6 +128,9 @@ check_toolkit_deps() {
   local d
 
   for d in "${deps[@]}"; do
+    [[ "$d" == "nerdctl" && "${ENABLE_DEV_EXTRAS:-}" != "true" ]] && continue
+    [[ "$d" == "restic" ]] && continue
+
     if ! command -v "$d" &>/dev/null; then
       missing+=("$d")
     fi
@@ -145,7 +148,7 @@ check_packages() {
   local expected=()
 
   # Always-installed base packages
-  for var in PACKAGES OTHER_PACKAGES; do
+  for var in PACKAGES OTHER_PACKAGES HYPRLAND_PACKAGES; do
     local -a pkgs
     read -ra pkgs <<< "${!var:-}"
     expected+=("${pkgs[@]}")

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 export TOOLSET_SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"

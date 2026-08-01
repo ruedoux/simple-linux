@@ -170,11 +170,11 @@ update_bashrc() {
 
 update_yazi_desktop() {
   mkdir -p "$HOME/.local/share/applications"
-  cat > "$HOME/.local/share/applications/yazi.desktop" << 'EOF'
+  cat > "$HOME/.local/share/applications/yazi.desktop" << EOF
 [Desktop Entry]
 Type=Application
 Name=Yazi File Manager
-Exec=kitty --class yazi -e yazi %U
+Exec=${SL_TERMINAL:-kitty} --class yazi -e yazi %U
 Terminal=false
 Categories=System;FileTools;FileManager;
 MimeType=inode/directory;
@@ -190,6 +190,7 @@ update_monitors() {
 }
 
 update_themes() {
+  source "$SL_ROOT_DIR/.sl-monitors-resolve.sh"
   local color_scheme="prefer-$SL_THEME_MODE"
   local gtk_theme="adw-gtk3-$SL_THEME_MODE"
 
@@ -322,9 +323,13 @@ setup_containers() {
   systemctl --user enable --now buildkit
 }
 
+_install_roslyn() {
+  eval "dotnet tool install --global roslyn-language-server --prerelease 2>/dev/null || dotnet tool update --global roslyn-language-server --prerelease"
+}
+
 setup_dev_env() {
   if command -v dotnet &>/dev/null; then
-    run_step "dotnet tool install --global roslyn-language-server --prerelease 2>/dev/null || dotnet tool update --global roslyn-language-server --prerelease" "installing roslyn-language-server (dotnet global tool)"
+    run_step _install_roslyn "installing roslyn-language-server (dotnet global tool)"
   else
     log_warn "dotnet SDK not found — skipping Roslyn install. Set ENABLE_DEV_EXTRAS=true in settings.env and re-run the system setup."
   fi

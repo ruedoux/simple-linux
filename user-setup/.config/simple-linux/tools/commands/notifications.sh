@@ -1,5 +1,5 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
 . "${TOOLSET_SCRIPT_DIR}/global.sh"
@@ -20,7 +20,7 @@ send_notify() {
   local message="$2"
   local urgency="${3:-normal}"
 
-  echo -e "${GREEN_COLOR}[NOTIFY]${NO_COLOR} ${message}"
+  echo -e "${GREEN}[NOTIFY]${RESET} ${message}"
 
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -u "$urgency" "$title" "$message" 2>/dev/null || true
@@ -41,7 +41,7 @@ list_alerts() {
   fi
 
   for alert in "${alerts[@]}"; do
-    echo -e "${RED_COLOR}$(basename "$alert")${NO_COLOR}"
+    echo -e "${RED}$(basename "$alert")${RESET}"
     cat "$alert"
     echo
   done
@@ -182,7 +182,7 @@ cmd_remind() {
       echo
     else
       for f in "${state_files[@]}"; do
-        echo -e "${RED_COLOR}$(basename "$f")${NO_COLOR} — $(cat "$f")"
+        echo -e "${RED}$(basename "$f")${RESET} — $(cat "$f")"
       done
     fi
     return

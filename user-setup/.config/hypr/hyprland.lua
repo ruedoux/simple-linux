@@ -32,7 +32,7 @@ hl.config({
     background_color = surface,
   },
   input = {
-    kb_layout  = "pl",
+    kb_layout  = os.getenv("SL_KB_LAYOUT") or "pl",
     follow_mouse = 1,
     mouse_refocus = true,
   }

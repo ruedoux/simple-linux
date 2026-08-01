@@ -1,4 +1,3 @@
-#!/bin/bash
 
 # Fix environment when su is used without '-' (preserves calling user's HOME)
 _CURRENT_USER="$(id -un 2>/dev/null)"

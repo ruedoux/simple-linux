@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -87,7 +87,7 @@ main() {
 }
 
 case $(whoami) in
-  root)log_error -e "[$0]: This script is NOT to be executed with sudo or as root. Aborting..."; exit 1;;
+  root)log_err -e "[$0]: This script is NOT to be executed with sudo or as root. Aborting..."; exit 1;;
 esac
 
 main "$@"

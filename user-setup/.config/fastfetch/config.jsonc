@@ -4,11 +4,11 @@
     "padding": {
       "top": 0,
       "right": 0,
-      "left": 0,
+      "left": 0
     },
   },
   "display": {
-    "separator": " ➜ ",
+    "separator": " ➜ "
   },
   "modules": [
     "break",
@@ -70,8 +70,8 @@
     {
       "type": "swap",
       "key": " └ 󰓡 ",
-      "keyColor": "33",
+      "keyColor": "33"
     },
     "break",
-  ],
+  ]
 }

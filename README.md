@@ -5,7 +5,7 @@
 **simple-linux** is a two-phase setup that takes a machine from Arch ISO boot to a complete desktop environment, then keeps it updated and themed — all without touching root for day-to-day management.
 
 - **[system-setup/](system-setup/)** — Root-level Arch installer: LUKS2 + Btrfs + UKI + Secure Boot + Hyprland
-- **[user-setup/](user-setup/)** — Per-user dotfiles, theming engine, custom package manager, and CLI toolkit (never needs sudo)
+- **[user-setup/](user-setup/)** — Per-user dotfiles, theming engine, custom package manager, and CLI toolkit (never needs sudo for day-to-day operations)
 
 ## Preview
 
@@ -22,7 +22,7 @@
 - **Full disk encryption** — LUKS2 on Btrfs subvolumes (`@`, `@home`, `@swap`, `@var_log`, `@var_cache_pacman`)
 - **Unified Kernel Images** — UEFI direct boot, no bootloader; signed with custom Secure Boot keys
 - **Material Design 3 theming** — matugen-powered palette extracted from wallpaper, injected into every UI surface
-- **User-level package manager** — PKGBUILD-like format, installs into `$HOME`, manifest-tracked, never needs sudo
+- **User-level package manager** — PKGBUILD-like format, installs into `$HOME`, manifest-tracked, never needs sudo for day-to-day operations
 - **Custom desktop shell** — Quickshell (Qt/QML): status bar, notifications, app menu, wallpaper browser
 - **CLI toolkit** — backups (restic), containers (nerdctl/compose), git identity switching, and more
 - **Idempotent** — every script is safe to run repeatedly

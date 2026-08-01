@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-RED_COLOR='\033[0;31m'
-GREEN_COLOR='\033[0;32m'
-BLUE_COLOR='\033[0;34m'
-PURPLE_COLOR='\033[0;35m'
-NO_COLOR='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+RESET='\033[0m'
 
 # Source config.env if it exists (relative to the tools/ directory)
 SL_ROOT_DIR="${SL_ROOT_DIR:-$(dirname "$TOOLSET_SCRIPT_DIR")}"
@@ -27,11 +27,11 @@ toolset.require_var() {
     fi
 }
 
-info() { echo -e "${BLUE_COLOR}[INFO]${NO_COLOR} $@"; }
-error() { echo -e "${RED_COLOR}[ERROR]${NO_COLOR} $@"; }
+info() { echo -e "${BLUE}[INFO]${RESET} $@"; }
+error() { echo -e "${RED}[ERROR]${RESET} $@"; }
 debug() {
   if [[ "${TOOLSET_DEBUG:-}" == "true" ]]; then
-    echo -e "${PURPLE_COLOR}[DEBUG]${NO_COLOR} $@"
+    echo -e "${PURPLE}[DEBUG]${RESET} $@"
   fi
 }
 

@@ -1,2 +1,9 @@
 tools/containers
 __pycache__
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+nohup.out
+*.log
