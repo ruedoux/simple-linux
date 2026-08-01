@@ -73,5 +73,5 @@ sudo sl-system-sync
 ```
 
 > Phase 2 is idempotent — safe to re-run after editing /etc/simple-linux/settings.env.
-> To update system files after a git pull in /opt/simple-linux, run `sudo /opt/simple-linux/system-setup/upgrade.sh`
+> To update system files after a git pull in /opt/simple-linux, run `sudo /opt/simple-linux/system-setup/install-scripts.sh`
 > first, then `sudo sl-system-sync` to apply changes.

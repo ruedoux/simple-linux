@@ -9,7 +9,6 @@ Singleton {
   property bool notificationCenterVisible: false
   property bool menuVisible: false
   property bool wallpaperVisible: false
-  property bool barVisible: true
 
   IpcHandler {
     target: "notifications"
@@ -30,21 +29,6 @@ Singleton {
     function toggle(): void { wallpaperVisible = !wallpaperVisible }
     function show(): void { wallpaperVisible = true }
     function hide(): void { wallpaperVisible = false }
-  }
-
-  IpcHandler {
-    target: "bar"
-    function refresh(): void {
-      barVisible = false
-      barRefreshTimer.start()
-    }
-  }
-
-  Timer {
-    id: barRefreshTimer
-    interval: 100
-    repeat: false
-    onTriggered: { barVisible = true }
   }
 
   function runDetached(command, logFile) {

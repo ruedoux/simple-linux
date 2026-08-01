@@ -17,7 +17,7 @@ fi
 
 preflight_checks() {
   log_step "Running preflight checks"
-  
+
   if [[ ! -d /sys/firmware/efi ]]; then
     log_err "Not booted in UEFI mode. This script requires UEFI."
     exit 1
@@ -218,11 +218,8 @@ copy_repository() {
 }
 
 install_system_files() {
-  mkdir -p /mnt/etc/simple-linux /mnt/usr/local/bin
-  install -m 644 "$SETUP_SCRIPT_DIR/settings.env"               /mnt/etc/simple-linux/settings.env
-  install -m 755 "$SCRIPT_DIR/sl-system-sync.sh"               /mnt/usr/local/bin/sl-system-sync
-  install -m 644 "$SETUP_SCRIPT_DIR/.lib.sh"                    /mnt/etc/simple-linux/lib.sh
-  log_ok "System files installed: /etc/simple-linux/ + /usr/local/bin/sl-system-sync"
+  "$SETUP_SCRIPT_DIR/install-scripts.sh" /mnt
+  log_ok "System files installed: /etc/simple-linux/ + /usr/local/bin/sl-system-*"
 }
 
 finish_setup() {
