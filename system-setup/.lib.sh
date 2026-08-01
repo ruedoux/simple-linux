@@ -6,7 +6,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 BOLD='\033[1m'
 RESET='\033[0m'
-LOG_FILE="/tmp/arch-install.log"
+LOG_FILE="/tmp/arch-install-$(date +%Y%m%d-%H%M%S).log"
 
 setup_logging() {
   > "$LOG_FILE"

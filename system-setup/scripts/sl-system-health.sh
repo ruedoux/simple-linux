@@ -168,7 +168,7 @@ check_packages() {
   local missing=()
   for pkg in "${expected[@]}"; do
     [[ -z "$pkg" ]] && continue
-    if ! pacman -Qi "$pkg" &>/dev/null; then
+    if ! pacman -Qi "$pkg" &>/dev/null && ! pacman -Qg "$pkg" &>/dev/null; then
       missing+=("$pkg")
     fi
   done
@@ -184,7 +184,6 @@ check_packages() {
 }
 
 check_dangling() {
-  echo ""
   log_step "Dangling pacman packages (pacman -Qtd)"
   local orphans
   orphans=$(pacman -Qtd 2>/dev/null | wc -l || true)
@@ -195,7 +194,11 @@ check_dangling() {
     check_warn "Dangling packages: ${orphans} found — review and remove with 'pacman -Rcns'"
   fi
 
-  echo ""
+  if [ "${HAS_SUDO:-}" != "true" ]; then
+    check_skip "Broken symlinks: requires sudo"
+    return
+  fi
+
   log_step "Broken symlinks (find / -xtype l)"
 
   # Exclude home directories and virtual filesystems
@@ -206,17 +209,13 @@ check_dangling() {
   excludes=${excludes:1}
 
   local broken
-  if [ "${HAS_SUDO:-}" == "true" ]; then
-    broken=$(sudo find / -path /dev -prune -o -path /proc -prune -o -path /run -prune -o -path /sys -prune -o -xtype l -print 2>/dev/null | grep -Ev "^($excludes)" || true)
-  else
-    broken=$(find / -path /dev -prune -o -path /proc -prune -o -path /run -prune -o -path /sys -prune -o -xtype l -print 2>/dev/null | grep -Ev "^($excludes)" || true)
-    check_skip "Broken symlinks: running without sudo — results may be incomplete"
-  fi
+  broken=$(sudo find / -path /dev -prune -o -path /proc -prune -o -path /run -prune -o -path /sys -prune -o -xtype l -print 2>/dev/null | grep -Ev "^($excludes)" || true)
 
   if [ -z "$broken" ]; then
     check_pass "Broken symlinks: none found"
   else
-    local tmpfile="/tmp/sl-health-broken-symlinks.txt"
+    local tmpfile
+    tmpfile=$(mktemp /tmp/sl-health-broken-symlinks-XXXXXX.txt)
     echo "$broken" > "$tmpfile"
     chmod 644 "$tmpfile"
     local count
