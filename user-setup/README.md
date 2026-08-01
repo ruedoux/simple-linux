@@ -133,10 +133,10 @@ sl-install-package.sh list                              # List installed package
 | Package | Description | Installs to |
 |---|---|---|
 | `shellcheck` 0.11.0-1 | Static analysis for shell scripts | `~/.local/bin/` |
-| `rose-pine-hyprcursor` | Rose Pine cursor theme | `~/.local/share/icons/` |
-| `pyenv` | Python version manager | `~/.pyenv/` |
-| `oh-my-posh-bin` | Shell prompt themer (binary) | `~/.local/bin/` |
-| `candy-icons` | Candy icon theme | `~/.local/share/icons/` |
+| `rose-pine-hyprcursor` 0.3.2-1 | Rose Pine cursor theme | `~/.local/share/icons/` |
+| `pyenv` 2.7.2-1 | Python version manager | `~/.pyenv/` |
+| `oh-my-posh-bin` 29.18.0-1 | Shell prompt themer (binary) | `~/.local/bin/` |
+| `candy-icons` master-1 | Candy icon theme | `~/.local/share/icons/` |
 | `dragon-drop` 1.2.0-1 | Drag-and-drop utility | `~/.local/bin/` |
 
 ---
@@ -150,7 +150,6 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 | `backup` | Restic backup/restore (local, remote, push, pull). Accepts a `--config <file>` flag pointing to a standalone JSON config with repository details. |
 | `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with health checks). |
 | `git-switch` | Switch git accounts and SSH keys per session. Reads profiles from a configurable directory. |
-| `maintanance` | Btrfs maintenance, port listing, dangling dependency checks. |
 | `notifications` | Desktop notifications, reminders, S.M.A.R.T. alerts. |
 | `opencode` | Run OpenCode in a container. |
 | `wireguard` | WireGuard setup (WIP — remote and local modes). |

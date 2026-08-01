@@ -13,8 +13,6 @@ FAIL=0
 WARN=0
 SKIP=0
 
-# ── Output helpers ───────────────────────────────────────────────────────────
-
 check_pass() { log_ok "$1"; PASS=$((PASS+1)); }
 check_fail() { log_err "$1"; FAIL=$((FAIL+1)); }
 check_warn() { log_warn "$1"; WARN=$((WARN+1)); }
@@ -35,8 +33,6 @@ need_sudo() {
   return 1
 }
 
-# ── Pre-flight ───────────────────────────────────────────────────────────────
-
 preflight() {
   echo -e "${BOLD}  s l   h e a l t h${RESET}"
   echo "======================="
@@ -50,8 +46,6 @@ preflight() {
     echo ""
   fi
 }
-
-# ── Filesystem ───────────────────────────────────────────────────────────────
 
 check_disk_space() {
   local paths=("/" "/home" "/var/log")
@@ -78,8 +72,6 @@ check_disk_space() {
     check_pass "Disk space: all mountpoints below ${warn_threshold}%"
   fi
 }
-
-# ── Btrfs (report-only) ──────────────────────────────────────────────────────
 
 check_btrfs() {
   if ! command -v btrfs &>/dev/null; then
@@ -123,8 +115,6 @@ check_btrfs() {
   fi
 }
 
-# ── Tools ────────────────────────────────────────────────────────────────────
-
 check_toolkit_deps() {
   local deps_str="${SL_TOOLSET_DEPS:-}"
   if [ -z "$deps_str" ]; then
@@ -151,47 +141,47 @@ check_toolkit_deps() {
   fi
 }
 
-# ── System Settings Consistency ──────────────────────────────────────────────
+check_packages() {
+  local expected=()
 
-check_settings_consistency() {
-  if [ -z "${ENABLE_DEV_EXTRAS:-}" ] && [ -z "${ENABLE_GAMING:-}" ]; then
-    check_skip "settings.env: not found, skipping consistency checks"
-    return
-  fi
+  # Always-installed base packages
+  for var in PACKAGES OTHER_PACKAGES; do
+    local -a pkgs
+    read -ra pkgs <<< "${!var:-}"
+    expected+=("${pkgs[@]}")
+  done
 
-  local ok=true
-
-  if [[ "${ENABLE_DEV_EXTRAS:-}" == "true" ]]; then
-    command -v nerdctl &>/dev/null || { check_warn "ENABLE_DEV_EXTRAS=true but nerdctl not installed"; ok=false; }
-    command -v dotnet &>/dev/null  || { check_warn "ENABLE_DEV_EXTRAS=true but dotnet not installed";  ok=false; }
-  fi
-
+  # Conditional: gaming
   if [[ "${ENABLE_GAMING:-}" == "true" ]]; then
-    command -v steam &>/dev/null || { check_warn "ENABLE_GAMING=true but steam not installed"; ok=false; }
+    local -a pkgs
+    read -ra pkgs <<< "${GAMING_PACKAGES:-}"
+    expected+=("${pkgs[@]}")
   fi
 
-  if $ok; then
-    check_pass "settings.env: all declared features consistent"
+  # Conditional: dev extras
+  if [[ "${ENABLE_DEV_EXTRAS:-}" == "true" ]]; then
+    local -a pkgs
+    read -ra pkgs <<< "${DEV_EXTRA_PACKAGES:-}"
+    expected+=("${pkgs[@]}")
+  fi
+
+  local missing=()
+  for pkg in "${expected[@]}"; do
+    [[ -z "$pkg" ]] && continue
+    if ! pacman -Qi "$pkg" &>/dev/null; then
+      missing+=("$pkg")
+    fi
+  done
+
+  if [ ${#missing[@]} -eq 0 ]; then
+    check_pass "Packages: all ${#expected[@]} installed"
+  else
+    for m in "${missing[@]}"; do
+      log_err "  - ${m}"
+    done
+    check_fail "Packages: ${#missing[@]}/${#expected[@]} missing — run 'sudo sl-system-sync'"
   fi
 }
-
-# ── Ports ────────────────────────────────────────────────────────────────────
-
-check_ports() {
-  if ! need_sudo "Port listing requires sudo"; then
-    return
-  fi
-
-  echo ""
-  log_step "Open ports (ss -lpntu)"
-  sudo ss -lpntu 2>/dev/null || check_warn "Ports: ss failed"
-
-  echo ""
-  log_step "Open ports (netstat -lpntu)"
-  sudo netstat -lpntu 2>/dev/null || check_skip "Ports: netstat not available"
-}
-
-# ── Dangling ─────────────────────────────────────────────────────────────────
 
 check_dangling() {
   echo ""
@@ -235,8 +225,6 @@ check_dangling() {
   fi
 }
 
-# ── Summary ──────────────────────────────────────────────────────────────────
-
 print_summary() {
   echo ""
   echo -e "─────────────────────────"
@@ -245,8 +233,6 @@ print_summary() {
   echo ""
   echo -e "─────────────────────────"
 }
-
-# ── Main ─────────────────────────────────────────────────────────────────────
 
 main() {
   preflight
@@ -260,11 +246,8 @@ main() {
   section "tools"
   check_toolkit_deps
 
-  section "system consistency"
-  check_settings_consistency
-
-  section "ports"
-  check_ports
+  section "packages"
+  check_packages
 
   section "dangling"
   check_dangling
