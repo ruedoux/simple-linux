@@ -32,6 +32,9 @@ jobs:
           # Save to file for the matrix/runner
           echo "$scripts" > /tmp/scripts.txt
 
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
       - name: Run ShellCheck
         run: |
           shellcheck --severity=warning -x $(cat /tmp/scripts.txt)
