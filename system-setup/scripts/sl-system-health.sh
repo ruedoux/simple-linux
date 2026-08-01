@@ -100,7 +100,7 @@ check_btrfs() {
 
   # Allocation / usage warning (suggests balance if heavily unbalanced)
   local usage_out
-  usage_out=$(sudo btrfs fi usage / 2>/dev/null || true)
+  usage_out=$(sudo btrfs 'fi' usage / 2>/dev/null || true)
   if [ -n "$usage_out" ]; then
     # Check if any data/metadata is < 10% allocated reserved — a balance may help
     local alloc_warn=false

@@ -262,8 +262,10 @@ cmd_setup_smartd() {
     esac
   done
 
-  local script_path="$(realpath "${BASH_SOURCE[0]}")"
-  local abs_alerts_dir="$(realpath -m "$alerts_dir")"
+  local script_path
+  script_path="$(realpath "${BASH_SOURCE[0]}")"
+  local abs_alerts_dir
+  abs_alerts_dir="$(realpath -m "$alerts_dir")"
 
   local email_flag=""
   if [[ -n "$email" ]]; then

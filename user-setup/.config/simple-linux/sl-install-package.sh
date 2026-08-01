@@ -177,9 +177,9 @@ install_cmd() {
     exit 1
   }
 
-  local current="${pkgver}-${pkgrel}"
+  local current="${pkgver:?}-${pkgrel:?}"
   local recorded
-  recorded="$(db_get_version "$pkgname")"
+  recorded="$(db_get_version "${pkgname:?}")"
 
   if [ -n "$recorded" ] && [ "$recorded" = "$current" ] && [ "$FORCE" -eq 0 ]; then
     info "Package '$pkgname' $current is already installed, skipping (use --force to reinstall)"

@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-export SL_ROOT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+SL_ROOT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+export SL_ROOT_DIR
 export SL_TEMPLATE_DIR="$SL_ROOT_DIR/templates"
 export SL_TEMPLATES_JSON="$SL_TEMPLATE_DIR/templates.json"
 export SL_WALLPAPERS_DIR="$SL_ROOT_DIR/files/wallpapers"
@@ -101,7 +102,8 @@ _wallpapers_resolve() {
   wallpapers_dir_real="$(realpath "$SL_WALLPAPERS_DIR")"
 
   if [[ "$resolved_src" == "$wallpapers_dir_real"/* ]]; then
-    local existing="$(basename "$resolved_src")"
+    local existing
+    existing="$(basename "$resolved_src")"
     if [[ "$existing" =~ ^wallpaper-[0-9]+\.[^.]+$ ]]; then
       echo "$existing"
       return 0
@@ -159,7 +161,8 @@ switch_theme_mode() {
 update_packages() {
   for pkg in "$SL_ROOT_DIR/packages/"*; do
     [ -e "$pkg" ] || continue
-    local package_name="$(basename "$pkg")"
+    local package_name
+    package_name="$(basename "$pkg")"
     "$SL_ROOT_DIR/sl-install-package.sh" install "$SL_ROOT_DIR/packages/$package_name"
   done
 }
@@ -195,12 +198,13 @@ update_themes() {
   local gtk_theme="adw-gtk3-$SL_THEME_MODE"
 
   export SL_MAIN_MONITOR="${SL_MAIN_MONITOR:-$(_get_biggest_monitor)}"
-  export SL_QT_THEME="$(
+  SL_QT_THEME="$(
     case "$SL_THEME_MODE" in
       dark)  printf '%s' "$SL_QT_DARK_THEME" ;;
       light) printf '%s' "$SL_QT_LIGHT_THEME" ;;
     esac
   )"
+  export SL_QT_THEME
 
   export SL_FONT_SIZE_SCALED=$((SL_FONT_SIZE * SL_UI_SCALE))
   gtk-update-icon-cache -f "$HOME/.local/share/icons/$SL_ICON_THEME"

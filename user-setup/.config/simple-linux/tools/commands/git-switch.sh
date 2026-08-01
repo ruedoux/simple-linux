@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck disable=SC2034
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
 . "${TOOLSET_SCRIPT_DIR}/global.sh"
 
 # Override to stderr since stdout is captured by eval
-info()  { echo -e "${BLUE}[INFO]${RESET} $@" >&2; }
-error() { echo -e "${RED}[ERROR]${RESET} $@" >&2; }
+info()  { echo -e "${BLUE}[INFO]${RESET} $*" >&2; }
+error() { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 
 switch_account() {
   local account_name="$1"

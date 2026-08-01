@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export TOOLSET_SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+TOOLSET_SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+export TOOLSET_SCRIPT_DIR
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
 usage() {
@@ -11,7 +12,8 @@ usage() {
   local scripts=("${TOOLSET_SCRIPT_DIR}/commands/"*.sh)
   for script in "${scripts[@]}"; do
     [[ -f "$script" ]] || continue
-    local name="$(basename "$script")"
+    local name
+    name="$(basename "$script")"
     name="${name%.sh}"
     [[ "$name" == "global" ]] && continue
     echo "  ${name}"

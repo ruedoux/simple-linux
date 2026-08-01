@@ -3,6 +3,7 @@
 set -euo pipefail
 
 RED='\033[0;31m'
+# shellcheck disable=SC2034
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
@@ -22,11 +23,11 @@ RESTIC_PASSWORD=${RESTIC_PASSWORD:-""}
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
-info() { echo -e "${BLUE}[INFO]${RESET} $@"; }
-error() { echo -e "${RED}[ERROR]${RESET} $@"; }
+info() { echo -e "${BLUE}[INFO]${RESET} $*"; }
+error() { echo -e "${RED}[ERROR]${RESET} $*"; }
 debug() {
   if [[ "${TOOLSET_DEBUG:-}" == "true" ]]; then
-    echo -e "${PURPLE}[DEBUG]${RESET} $@"
+    echo -e "${PURPLE}[DEBUG]${RESET} $*"
   fi
 }
 
@@ -120,12 +121,16 @@ backup() {
     fi
   done
 
-  local repo_root=$(get_json_value "$config_file_path" "repo-root")
-  local repo_name=$(get_json_value "$config_file_path" "repo-name")
+  local repo_root
+  repo_root=$(get_json_value "$config_file_path" "repo-root")
+  local repo_name
+  repo_name=$(get_json_value "$config_file_path" "repo-name")
   local repo_path="${repo_root}/${repo_name}"
 
-  local backup_tag=$(jq -r '.tag // "main"' "$config_file_path")
-  local compression=$(jq -r '.compression // "max"' "$config_file_path")
+  local backup_tag
+  backup_tag=$(jq -r '.tag // "main"' "$config_file_path")
+  local compression
+  compression=$(jq -r '.compression // "max"' "$config_file_path")
 
   case "$compression" in
     auto|off|max) ;;
@@ -145,12 +150,15 @@ backup() {
     return 0
   fi
 
-  local includes_file=$(mktemp)
-  local excludes_file=$(mktemp)
+  local includes_file
+  includes_file=$(mktemp)
+  local excludes_file
+  excludes_file=$(mktemp)
 
   local lock_dir="${HOME}/.cache/sl-backup/locks"
   mkdir -p "$lock_dir"
-  local lock_file="${lock_dir}/backup-$(echo "$repo_path" | sha256sum | cut -d' ' -f1).lock"
+  local lock_file
+  lock_file="${lock_dir}/backup-$(echo "$repo_path" | sha256sum | cut -d' ' -f1).lock"
   exec 9>"$lock_file"
   if ! flock -n 9; then
     error "Another backup is already running for repo '$repo_path'. Exiting."
@@ -165,7 +173,8 @@ backup() {
   debug "Excludes content:\n$(cat "$excludes_file")"
   if ! [[ -n "$RESTIC_PASSWORD" ]]; then
     if jq -e "has(\"key\")" "$config_file_path" > /dev/null; then
-      export RESTIC_PASSWORD=$(jq -r '.["key"]' "$config_file_path")
+      RESTIC_PASSWORD=$(jq -r '.["key"]' "$config_file_path")
+      export RESTIC_PASSWORD
     elif [[ -t 0 ]]; then
       read -s -p "Enter repository password: " RESTIC_PASSWORD
       export RESTIC_PASSWORD
@@ -257,7 +266,8 @@ remote_backup() {
   local config_file_path="$1"
 
   ensure_file_exists "$config_file_path"
-  local server_name=$(get_json_value "$config_file_path" "server")
+  local server_name
+  server_name=$(get_json_value "$config_file_path" "server")
 
   test_connection "$server_name"
 
@@ -275,7 +285,8 @@ remote_backup() {
     fi
   done
 
-  local script_name="$(basename "${BASH_SOURCE[0]}")"
+  local script_name
+  script_name="$(basename "${BASH_SOURCE[0]}")"
   local remote_home
   remote_home=$(ssh "$server_name" 'echo $HOME')
   local script_destination_path="${remote_home}/.cache/sl-backup/${script_name}.XXXXXX-$$"
@@ -285,8 +296,10 @@ remote_backup() {
   local config_destination_path="${remote_home}/.cache/sl-backup/backup-config.XXXXXX.json-$$"
   rsync_copy "$config_file_path" "$server_name:$config_destination_path"
 
-  local escaped_script_path=$(printf '%q' "$script_destination_path")
-  local escaped_config_path=$(printf '%q' "$config_destination_path")
+  local escaped_script_path
+  escaped_script_path=$(printf '%q' "$script_destination_path")
+  local escaped_config_path
+  escaped_config_path=$(printf '%q' "$config_destination_path")
 
   info "Running backup on server '$server_name'"
   ssh "$server_name" "${escaped_script_path} --config ${escaped_config_path}; rc=\$?; rm -f ${escaped_script_path} ${escaped_config_path}; exit \$rc"
@@ -340,9 +353,12 @@ sync_backup_internal() {
   ensure_file_exists "$local_config"
   ensure_file_exists "$dest_config"
 
-  local local_repo_root=$(get_json_value "$local_config" "repo-root")
-  local dest_repo_root=$(get_json_value "$dest_config" "repo-root")
-  local server_name=$(get_json_value "$dest_config" "server")
+  local local_repo_root
+  local_repo_root=$(get_json_value "$local_config" "repo-root")
+  local dest_repo_root
+  dest_repo_root=$(get_json_value "$dest_config" "repo-root")
+  local server_name
+  server_name=$(get_json_value "$dest_config" "server")
 
   if [[ "$direction" == "push" ]]; then
     info "Pushing local repository '$sync_repo_name' to server '$server_name'"

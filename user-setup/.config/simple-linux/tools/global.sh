@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 RED='\033[0;31m'
+# shellcheck disable=SC2034
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
@@ -27,11 +28,11 @@ toolset.require_var() {
     fi
 }
 
-info() { echo -e "${BLUE}[INFO]${RESET} $@"; }
-error() { echo -e "${RED}[ERROR]${RESET} $@"; }
+info() { echo -e "${BLUE}[INFO]${RESET} $*"; }
+error() { echo -e "${RED}[ERROR]${RESET} $*"; }
 debug() {
   if [[ "${TOOLSET_DEBUG:-}" == "true" ]]; then
-    echo -e "${PURPLE}[DEBUG]${RESET} $@"
+    echo -e "${PURPLE}[DEBUG]${RESET} $*"
   fi
 }
 

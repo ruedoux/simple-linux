@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 
 # Fix environment when su is used without '-' (preserves calling user's HOME)
 _CURRENT_USER="$(id -un 2>/dev/null)"
@@ -45,6 +46,7 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
+  # shellcheck disable=SC2154
   PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w \$\[\033[00m\] '
 else
   PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
@@ -119,10 +121,11 @@ extract() {
 }
 
 y() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	local tmp cwd
+	tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
 	command yazi "$@" --cwd-file="$tmp"
 	IFS= read -r -d '' cwd < "$tmp"
-	[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
+	[ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd" || return
 	command rm -f -- "$tmp"
 }
 
