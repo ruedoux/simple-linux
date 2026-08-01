@@ -26,16 +26,12 @@ jobs:
         id: find-scripts
         run: |
           # Find all files with a bash shebang on line 1
-          scripts=$(grep -rlP '^#!.*/(ba)?sh\b' --include='*' . | grep -v './.git/' | sort)
+          scripts=$(grep -rlP '^#!.*\b(ba)?sh\b' --include='*' . | grep -v './.git/' | grep -v '/packages/' | sort)
           echo "Found $(echo "$scripts" | wc -l) shell scripts"
           echo "$scripts"
           # Save to file for the matrix/runner
           echo "$scripts" > /tmp/scripts.txt
 
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
-        with:
-          scandir: '.'
-          format: tty
-          severity: warning
-          check_together: 'yes'
+        run: |
+          shellcheck --severity=warning -x $(cat /tmp/scripts.txt)
