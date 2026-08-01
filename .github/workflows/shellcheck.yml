@@ -3,18 +3,8 @@ name: ShellCheck
 on:
   push:
     branches: [main, master]
-    paths:
-      - "**.sh"
-      - "**/.lib.sh"
-      - "**/.bashrc"
-      - "**/.sl-*"
   pull_request:
     branches: [main, master]
-    paths:
-      - "**.sh"
-      - "**/.lib.sh"
-      - "**/.bashrc"
-      - "**/.sl-*"
 
 jobs:
   shellcheck:
