@@ -9,7 +9,7 @@ hl.bind("SUPER + C", hl.dsp.exec_cmd(terminal.." -e nvim"))
 hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | wl-copy'))
 
 hl.bind("SUPER + SHIFT + C", hl.dsp.window.close())
-hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/hypr/hyprlock-wrapper.sh"))
 hl.bind("SUPER + X", hl.dsp.window.fullscreen())
 
 -- Settings control

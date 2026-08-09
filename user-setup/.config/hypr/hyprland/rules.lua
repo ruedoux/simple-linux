@@ -18,6 +18,11 @@ hl.window_rule({ match = { class = "^(nm-connection-editor)$" }, float = true })
 hl.window_rule({ match = { class = "^(nm-connection-editor)$" }, size = { "(monitor_w*0.45)", "(monitor_h*0.45)" } })
 hl.window_rule({ match = { class = "^(nm-connection-editor)$" }, center = true })
 hl.window_rule({ match = { title = ".*Shell conflicts.*" }, float = true })
-hl.window_rule({ match = { initial_class = "Godot", title = ".*(DEBUG).*" }, float = true, center = true })
-hl.window_rule({ match = { initial_title = "Godot", title = ".*(DEBUG).*" }, float = true, center = true })
+hl.window_rule({
+  match = { class = "Godot", title = ".*DEBUG.*" },
+  float = true,
+  center = true,
+  size = { "(monitor_w*0.65)", "(monitor_h*0.65)" },
+  fullscreen = false,
+})
 hl.window_rule({ match = { class = "^(steam)$", title = "negative:^(Steam)$" }, float = true })

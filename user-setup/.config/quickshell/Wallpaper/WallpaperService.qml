@@ -39,6 +39,11 @@ Singleton {
     files = files.filter(f => f.name !== name)
   }
 
+  function addFile(path) {
+    addProcess.command = [Settings.slControllerPath, "update-wallpaper", "--path", path]
+    addProcess.running = true
+  }
+
   Process {
     id: listProcess
     command: ["sh", "-c", "ls -1 '" + Settings.wallpapersDir + "' 2>/dev/null"]
@@ -66,6 +71,11 @@ Singleton {
 
   Process {
     id: deleteProcess
+    onExited: wallpaperService.refresh()
+  }
+
+  Process {
+    id: addProcess
     onExited: wallpaperService.refresh()
   }
 

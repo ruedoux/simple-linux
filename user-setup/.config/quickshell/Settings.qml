@@ -1,6 +1,7 @@
 pragma Singleton
 import Quickshell
 import Quickshell.Io
+import QtQuick
 
 Singleton {
   // Overrides
@@ -9,9 +10,26 @@ Singleton {
   readonly property string fontFamily: "CaskaydiaCove Nerd Font Mono"
   readonly property int fontSize: 12 * scale
   readonly property string terminal: "kitty"
-  
+
   // Screen
-  readonly property var screen: Quickshell.screens.find(s => s.name === monitorName) ?? Quickshell.screens[0]
+  // Poll until the configured main monitor appears, then lock in.
+  // No fallback — avoids rendering the bar on the wrong monitor when
+  // screens are detected out of order during cold boot.
+  property var screen
+
+  Timer {
+    interval: 1000
+    repeat: true
+    running: true
+    onTriggered: {
+      const correct = Quickshell.screens.find(s => s.name === monitorName)
+      if (correct) {
+        screen = correct
+        stop()
+      }
+    }
+  }
+
   readonly property real screenWidth: screen?.width ?? 1920
   readonly property real screenHeight: screen?.height ?? 1080
 
