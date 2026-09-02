@@ -173,5 +173,5 @@ if command -v sl-toolset.sh >/dev/null 2>&1; then
 		echo "$TODAY" > "$DAILY_CHECK_FILE"
 	fi
 
-	sl-toolset.sh notifications list-alerts -d "$HOME/.config/alerts"
+	sl-toolset.sh notifications list-alerts
 fi

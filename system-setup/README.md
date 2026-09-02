@@ -13,6 +13,7 @@ A fully automated Arch Linux install & configuration system. Takes a bare-metal 
 | **Secure Boot** | Custom keys via `sbctl`, UKI signing, automatic re-sign via sbctl's built-in pacman hook |
 | **Snapshots** | `timeshift` installed for Btrfs snapshots (manual configuration required) |
 | **Firewall** | `nftables` (default-deny inbound, allow established/loopback/DHCP) |
+| **S.M.A.R.T.** | `smartd` enabled with disk-failure alerts written to `/var/lib/simple-linux/alerts` (world-readable) |
 | **Desktop** | Hyprland, PipeWire audio, Bluetooth |
 
 ## Prerequisites
@@ -88,3 +89,5 @@ sudo sl-system-sync
 > skips existing users. Note: it always runs a full system upgrade (`pacman -Syu`).
 > To update system files after a git pull in /opt/simple-linux, run `sudo /opt/simple-linux/system-setup/install-scripts.sh`
 > first, then `sudo sl-system-sync` to apply changes.
+
+Run `sl-system-health` (read-only) to check disk space, Btrfs scrub status, per-disk S.M.A.R.T. health, package completeness, and dangling packages. It exits non-zero on failures.

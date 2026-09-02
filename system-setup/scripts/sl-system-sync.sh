@@ -165,6 +165,29 @@ enable_system_services() {
   sudo systemctl enable --now $SYSTEMD_SYSTEM_SERVICES
 }
 
+setup_smartd() {
+  if ! command -v smartd &>/dev/null; then
+    log_warn "smartd not installed, skipping S.M.A.R.T. monitoring configuration"
+    return 0
+  fi
+
+  local smartd_conf="/etc/smartd.conf"
+  local exec_line="DEVICESCAN -M exec /usr/local/bin/sl-smartd-alert"
+
+  if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
+    log_ok "smartd.conf already configured, skipping"
+  else
+    sudo tee "$smartd_conf" > /dev/null <<SMARTD_CONF
+# simple-linux managed — S.M.A.R.T. monitoring, alerts written to ${SMART_ALERTS_DIR:-/var/lib/simple-linux/alerts}
+${exec_line}
+SMARTD_CONF
+    log_ok "smartd.conf configured"
+  fi
+
+  sudo systemctl enable --now smartd
+  log_ok "smartd service enabled"
+}
+
 configure_wireless_regdom() {
   if [[ -z "${WIRELESS_REGDOM:-}" ]]; then
     log_warn "WIRELESS_REGDOM not set, skipping wireless regulatory domain configuration"
@@ -328,6 +351,7 @@ main() {
   run_step install_packages "installing packages"
   run_step install_dev_extras "installing development extras"
   run_step enable_system_services "enabling system services"
+  run_step setup_smartd "configuring S.M.A.R.T. monitoring (smartd)"
   run_step configure_wireless_regdom "configuring wireless regulatory domain"
 
   # Secure Boot — 3-way check: skip/configure/warn

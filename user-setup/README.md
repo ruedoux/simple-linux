@@ -151,7 +151,7 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 | `backup` | Restic backup (local, remote, push, pull). Accepts a `--config <file>` flag pointing to a standalone JSON config with repository details. |
 | `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with health checks). |
 | `git-switch` | Switch git accounts and SSH keys per session. Reads profiles from a configurable directory. |
-| `notifications` | Desktop notifications, reminders, S.M.A.R.T. alerts. |
+| `notifications` | Desktop notifications and reminders. S.M.A.R.T. alerts are produced by the system-level `smartd` service (see system-setup) and surfaced via `list-alerts` from `/var/lib/simple-linux/alerts`. |
 | `opencode` | Run OpenCode in a container. |
 | `wireguard` | WireGuard setup (WIP — remote and local modes). |
 

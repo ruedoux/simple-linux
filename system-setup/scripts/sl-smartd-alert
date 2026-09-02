@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Called by smartd via "-M exec" when a disk reports a failure.
+# Writes a world-readable .alert file for the user-facing `list-alerts` command.
+
+ALERTS_DIR="${SMART_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
+
+device="${SMARTD_DEVICESTRING:-${SMARTD_DEVICE:-unknown}}"
+fail_type="${SMARTD_FAILTYPE:-unknown}"
+message="${SMARTD_MESSAGE:-No SMARTD_MESSAGE provided}"
+
+mkdir -p "$ALERTS_DIR"
+chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
+
+timestamp="$(date +"%Y-%m-%d_%H-%M-%S-%3N")"
+alert_file="${ALERTS_DIR}/${timestamp}.alert"
+
+{
+  printf 'Device: %s\n' "$device"
+  printf 'Fail type: %s\n' "$fail_type"
+  printf '%s\n' "$message"
+} > "$alert_file"
+
+chmod 0644 "$alert_file" 2>/dev/null || true

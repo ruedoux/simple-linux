@@ -115,6 +115,40 @@ check_btrfs() {
   fi
 }
 
+check_disk_health() {
+  if ! command -v smartctl &>/dev/null; then
+    check_skip "Disk health: smartmontools (smartctl) not installed"
+    return
+  fi
+
+  if ! need_sudo "Disk health: smartctl requires sudo"; then
+    return
+  fi
+
+  local disks
+  disks=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}')
+
+  if [ -z "$disks" ]; then
+    check_skip "Disk health: no physical disks found"
+    return
+  fi
+
+  local disk
+  while read -r disk; do
+    [ -z "$disk" ] && continue
+    local out
+    out=$(sudo smartctl -H "/dev/$disk" 2>&1 || true)
+
+    if echo "$out" | grep -qE "SMART overall-health self-assessment test result: PASSED|SMART Health Status: OK"; then
+      check_pass "Disk /dev/$disk: SMART health PASSED"
+    elif echo "$out" | grep -qiE "Device does not support SMART|SMART support is: *unavailable|Unknown USB bridge"; then
+      check_skip "Disk /dev/$disk: SMART not supported"
+    else
+      check_fail "Disk /dev/$disk: SMART check failed — run 'smartctl -a /dev/$disk' for details"
+    fi
+  done <<< "$disks"
+}
+
 check_toolkit_deps() {
   local deps_str="${SL_TOOLSET_DEPS:-}"
   if [ -z "$deps_str" ]; then
@@ -244,6 +278,9 @@ main() {
 
   section "btrfs"
   check_btrfs
+
+  section "disks"
+  check_disk_health
 
   section "tools"
   check_toolkit_deps

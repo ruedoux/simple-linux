@@ -30,7 +30,7 @@ send_notify() {
 list_alerts() {
   local alert_dir="$1"
 
-  mkdir -p "$alert_dir"
+  mkdir -p "$alert_dir" 2>/dev/null || true
   shopt -s nullglob
 
   local alerts=("$alert_dir"/*.alert)
@@ -110,7 +110,7 @@ cmd_create_alert() {
 cmd_list_alerts() {
   local SCRIPT_NAME
   SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-  local alert_dir=""
+  local alert_dir="${SMART_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -127,11 +127,6 @@ cmd_list_alerts() {
         ;;
     esac
   done
-
-  if [[ -z "$alert_dir" ]]; then
-    echo "Usage: $SCRIPT_NAME list-alerts -d <dir>"
-    return 1
-  fi
 
   list_alerts "$alert_dir"
 }
@@ -237,60 +232,7 @@ cmd_send_notify() {
   send_notify "$title" "$message" "$urgency"
 }
 
-cmd_setup_smartd() {
-  local alerts_dir="${TOOLSET_SCRIPT_DIR}/alerts"
-  local email=""
-  local smartd_conf="/etc/smartd.conf"
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -d|--dir)
-        alerts_dir="$2"
-        shift 2
-        ;;
-      -e|--email)
-        email="$2"
-        shift 2
-        ;;
-      -*)
-        echo "Unknown option: $1"
-        return 1
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-
-  local script_path
-  script_path="$(realpath "${BASH_SOURCE[0]}")"
-  local abs_alerts_dir
-  abs_alerts_dir="$(realpath -m "$alerts_dir")"
-
-  local email_flag=""
-  if [[ -n "$email" ]]; then
-    email_flag="-m $email "
-  fi
-
-  local exec_line="DEVICESCAN ${email_flag}-M exec $script_path create-alert -d $abs_alerts_dir -m \"Fail type: \$SMARTD_FAILTYPE\n\$SMARTD_MESSAGE\""
-  if [[ ! -f "$smartd_conf" ]]; then
-    error "$smartd_conf not found. Is smartd installed?"
-    return 1
-  fi
-
-  if grep -qF "$script_path create-alert" "$smartd_conf"; then
-    info "smartd.conf already contains an entry for this script. Replacing it."
-    sudo sed -i "\|$script_path create-alert|d" "$smartd_conf"
-  fi
-
-  echo "$exec_line" | sudo tee -a "$smartd_conf" > /dev/null
-  info "Added to $smartd_conf:"
-  echo "  $exec_line"
-  echo
-  info "Restart smartd to apply: sudo systemctl restart smartd"
-}
-
-case "$1" in
+case "${1:-}" in
   create-alert)
     shift
     cmd_create_alert "$@"
@@ -307,12 +249,8 @@ case "$1" in
     shift
     cmd_send_notify "$@"
     ;;
-  setup-smartd)
-    shift
-    cmd_setup_smartd "$@"
-    ;;
   *)
-    echo "Usage: $SCRIPT_NAME [create-alert|list-alerts|remind|send-notify|setup-smartd]"
+    echo "Usage: $SCRIPT_NAME [create-alert|list-alerts|remind|send-notify]"
     exit 1
     ;;
 esac
