@@ -77,8 +77,32 @@ PropagatesStopTo=graphical-session.target
 EOF
 }
 
+setup_ssh_config() {
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+
+  local dest="$HOME/.ssh/config"
+  if [ -f "$dest" ] && grep -q "SetEnv TERM" "$dest"; then
+    log_ok "SSH config already has TERM override, skipping"
+    return 0
+  fi
+
+  local block='# simple-linux managed — appended idempotently, never overwritten
+Host *
+    SetEnv TERM=xterm-256color'
+  if [ -f "$dest" ]; then
+    log_ok "Appending TERM override to existing SSH config"
+    printf '\n%s\n' "$block" >> "$dest"
+  else
+    printf '%s\n' "$block" > "$dest"
+  fi
+  chmod 600 "$dest"
+  log_ok "Synced SSH config"
+}
+
 main() {
   log_start "Starting setup"
+  run_step setup_ssh_config "setting up ssh config"
   run_step copy_dots "copying dots"
   run_step start_user_services "starting user services"
   run_step setup_hyprland_autostart "setting up hyprland autostart"

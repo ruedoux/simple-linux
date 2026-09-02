@@ -48,9 +48,6 @@ dofile(vim.fn.stdpath("config") .. "/plugins.lua")
 
 -- Precompute hidden-file derived values
 local hidden_vimregexes = vim.tbl_map(cfg._to_vimregex, cfg.hiddenPatterns)
-local fd_excludes_str = cfg._to_fd_exclude(cfg.hiddenPatterns)
-local rg_excludes_str = cfg._to_rg_glob(cfg.hiddenPatterns)
-
 -- Treesitter
 dofile(vim.fn.stdpath("config") .. "/treesitter.lua").setup()
 
@@ -72,20 +69,6 @@ vim.keymap.set("n", "<leader>e", function()
   require("nvim-tree.api").tree.toggle()
 end, { desc = "Toggle NvimTree" })
 
--- Toggle hidden files (nvim-tree custom filter + fzf-lua)
-local hiding_enabled = true
-
-local function toggle_hidden_files()
-  hiding_enabled = not hiding_enabled
-  require("nvim-tree.api").filter.custom.toggle()
-  vim.notify(
-    hiding_enabled and "Hidden files: ON" or "Hidden files: OFF",
-    hiding_enabled and vim.log.levels.INFO or vim.log.levels.WARN
-  )
-end
-
-vim.keymap.set("n", "<leader>hh", toggle_hidden_files, { desc = "Toggle hidden files" })
-
 -- NvimTree transparency
 vim.api.nvim_set_hl(0, "NvimTreeNormalNC", { bg = "none" })
 vim.api.nvim_set_hl(0, "SignColumn", { bg = "none" })
@@ -105,35 +88,32 @@ dofile(vim.fn.stdpath("config") .. "/file-pairs.lua").setup({
 require("fzf-lua").setup({})
 
 vim.keymap.set("n", "<leader>ff", function()
-  if hiding_enabled and fd_excludes_str ~= "" then
-    require("fzf-lua").files({
-      fd_opts = [[--color=never --type f --type l --exclude .git --exclude .jj]] .. fd_excludes_str,
-    })
-  else
-    require("fzf-lua").files()
-  end
-end, { desc = "FZF Files" })
+  require("fzf-lua").files({ hidden = true, no_ignore = true })
+end, { desc = "Find files" })
 vim.keymap.set("n", "<leader>fg", function()
-  if hiding_enabled and rg_excludes_str ~= "" then
-    require("fzf-lua").live_grep({
-      rg_opts = [[--column --line-number --no-heading --color=always --smart-case --max-columns=4096]] .. rg_excludes_str .. [[ -e]],
-    })
-  else
-    require("fzf-lua").live_grep()
-  end
-end, { desc = "FZF Live Grep" })
+    require("fzf-lua").live_grep({ rg_opts = "--no-ignore --hidden --glob '!.git'", silent = true })
+end, { desc = "Live grep" })
 vim.keymap.set("n", "<leader>fb", function()
   require("fzf-lua").buffers()
-end, { desc = "FZF Buffers" })
+end, { desc = "Buffers" })
 vim.keymap.set("n", "<leader>fh", function()
   require("fzf-lua").help_tags()
-end, { desc = "FZF Help Tags" })
+end, { desc = "Help tags" })
 vim.keymap.set("n", "<leader>fx", function()
   require("fzf-lua").diagnostics_document()
-end, { desc = "FZF Diagnostics Document" })
+end, { desc = "Document diagnostics" })
 vim.keymap.set("n", "<leader>fX", function()
   require("fzf-lua").diagnostics_workspace()
-end, { desc = "FZF Diagnostics Workspace" })
+end, { desc = "Workspace diagnostics" })
+
+-- Quickfix replace helper (after fzf-lua grep → Ctrl+q → Enter)
+vim.keymap.set("n", "<leader>fr", function()
+  local from = vim.fn.input("Replace: ")
+  if from == "" then return end
+  local to = vim.fn.input("With: ")
+  vim.cmd("cfdo %s/" .. from .. "/" .. to .. "/gc | update")
+  vim.cmd("cclose")
+end, { desc = "Replace in quickfix files" })
 
 -- mini.nvim
 require("mini.ai").setup({})
