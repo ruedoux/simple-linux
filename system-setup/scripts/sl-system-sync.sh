@@ -172,7 +172,7 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -M exec /usr/local/bin/sl-smartd-alert"
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-smartd-alert"
 
   if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
