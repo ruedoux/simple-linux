@@ -20,7 +20,10 @@ PanelWindow {
     : WlrKeyboardFocus.None
 
   onVisibleChanged: {
-    if (visible) keyHandler.forceActiveFocus()
+    if (visible) {
+      keyHandler.forceActiveFocus()
+      EventBus.unreadNotifications = 0
+    }
   }
 
   anchors {

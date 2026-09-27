@@ -159,19 +159,3 @@ fi
 if command -v oh-my-posh >/dev/null 2>&1; then
 	eval "$(oh-my-posh init bash --config $HOME/.config/oh-my-posh/default.json)"
 fi
-
-if command -v sl-toolset.sh >/dev/null 2>&1; then
-	mkdir -p "$HOME/.config/reminders"
-
-	DAILY_CHECK_FILE="$HOME/.config/reminders/.last-reminder-check"
-	TODAY="$(date +%Y-%m-%d)"
-	LAST_CHECK="$(cat "$DAILY_CHECK_FILE" 2>/dev/null || true)"
-
-	if [ "$LAST_CHECK" != "$TODAY" ]; then
-		sl-toolset.sh notifications remind -f "$HOME/.config/reminders/.reminder-btrfs" -s 2592000 -c "Health check on btrfs"
-		sl-toolset.sh notifications remind -f "$HOME/.config/reminders/.reminder-update" -s 604800 -c "Update the system + backup"
-		echo "$TODAY" > "$DAILY_CHECK_FILE"
-	fi
-
-	sl-toolset.sh notifications list-alerts
-fi

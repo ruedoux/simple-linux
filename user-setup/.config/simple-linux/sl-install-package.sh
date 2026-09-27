@@ -11,12 +11,15 @@ info()    { echo -e "${GREEN}[INFO]${RESET} $*"; }
 warning() { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 error()   { echo -e "${RED}[ERROR]${RESET} $*" >&2; }
 
-# Overridable configuration
-: "${HOME:?HOME must be set}"
-INSTALL_ROOT="${INSTALL_ROOT:-$HOME}"
-XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-DB_DIR="${DB_DIR:-$XDG_DATA_HOME/install-package/db}"
-DEBUG="${DEBUG:-false}"
+configure_environment() {
+  : "${HOME:?HOME must be set}"
+  INSTALL_ROOT="${INSTALL_ROOT:-$HOME}"
+  XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+  DB_DIR="${DB_DIR:-$XDG_DATA_HOME/install-package/db}"
+  DEBUG="${DEBUG:-false}"
+}
+
+configure_environment
 
 # DB record format:
 #   version=<pkgver>-<pkgrel>
@@ -102,9 +105,6 @@ contains_variable() {
   done
 }
 
-# Derive the local filename for a source entry. For 'name::url' the name is
-# used verbatim; for a bare url the URL basename is used. The result must be a
-# flat filename (no '/'), since all sources are staged directly in $srcdir.
 source_filename() {
   local entry="$1" filename
   if [[ "$entry" == *::* ]]; then
@@ -158,8 +158,6 @@ download_sources() {
   done
 }
 
-# Verify dependencies are installed via pacman. Simple presence check only,
-# nothing is installed by this script.
 check_dependencies() {
   local dep
   for dep in "${depends[@]}"; do
@@ -238,11 +236,8 @@ install_cmd() {
   info "Package '$pkgname' installed successfully!"
 }
 
-# Build manifest of staged files (relative to $pkgdir). Collected
-# null-delimited from find, then validated: the DB format is newline-
-# delimited, so a path containing a newline is rejected rather than
-# silently corrupting the record. Traversal/absolute paths are rejected
-# so uninstall can never rm outside $INSTALL_ROOT.
+# Rejects newline, traversal, and absolute paths so uninstall can never rm
+# outside $INSTALL_ROOT.
 build_manifest_from_pkgdir() {
   local manifest="$1" rel
   : > "$manifest"
@@ -256,11 +251,8 @@ build_manifest_from_pkgdir() {
   done < <(cd "$pkgdir" && find . \( -type f -o -type l \) -print0)
 }
 
-# File-conflict detection: refuse to clobber a file owned by a *different*
-# package, so uninstalling one package can't delete another's files. The
-# ownership index is built once (one parse per DB record) into an associative
-# array, then each manifest path is checked with an O(1) lookup, avoiding the
-# previous O(files * packages) re-parse-and-grep hot loop.
+# Refuses to clobber a file owned by a different package, so uninstalling one
+# package can't delete another's files.
 abort_on_file_conflicts() {
   local manifest="$1"
   [ -d "$DB_DIR" ] || return 0
@@ -285,10 +277,7 @@ abort_on_file_conflicts() {
   [ "$conflict" -eq 0 ] || { error "Aborting due to file conflicts"; return 1; }
 }
 
-# Version-change cleanup: remove files present in the old manifest but no
-# longer in the new one, to avoid orphaned files on upgrade/reinstall. The
-# new manifest is indexed once into an associative array so each old path is
-# tested with an O(1) lookup instead of a per-file grep over the manifest.
+# Removes files present in the old manifest but no longer in the new one.
 remove_orphaned_files_on_version_change() {
   local manifest="$1"
   [ -f "$DB_DIR/$pkgname" ] || return 0
@@ -306,8 +295,6 @@ remove_orphaned_files_on_version_change() {
   done < <(db_get_files "$pkgname")
 }
 
-# Install staged tree into $HOME, overwriting any existing files (matching
-# standard package-manager behavior).
 install_staged_tree() {
   info "Installing files into \$HOME..."
   cp -a "$pkgdir/." "$INSTALL_ROOT/"
@@ -338,9 +325,7 @@ uninstall_cmd() {
   info "Package '$pkgname' uninstalled successfully!"
 }
 
-# Prune now-empty directories bottom-up. Sort by depth (longest path first)
-# so children are removed before parents. rmdir is non-recursive and only
-# removes empty dirs, so unrelated content is preserved.
+# rmdir only removes empty dirs, so unrelated content is preserved.
 prune_empty_directories() {
   local dirs="$1" dir
   [ -n "$dirs" ] || return 0
@@ -381,24 +366,35 @@ source_package_file() {
   contains_variable "$FILE" pkgname pkgver source sha256sums pkgrel
   source "$FILE"
 
-  # Ensure source/sha256sums/depends are arrays so "${arr[@]}" is safe under
-  # set -u even when a package file leaves them unset or declares them as
-  # scalars.
-  if ! declare -p source >/dev/null 2>&1 || [[ "$(declare -p source 2>/dev/null)" != "declare -a"* ]]; then
-    declare -ga source=()
-  fi
-  if ! declare -p sha256sums >/dev/null 2>&1 || [[ "$(declare -p sha256sums 2>/dev/null)" != "declare -a"* ]]; then
-    declare -ga sha256sums=()
-  fi
-  if ! declare -p depends >/dev/null 2>&1 || [[ "$(declare -p depends 2>/dev/null)" != "declare -a"* ]]; then
-    declare -ga depends=()
-  fi
+  ensure_package_variables_are_arrays
 
-  # Validate pkgname: it becomes a DB filename, so reject path separators and
-  # traversal to keep it confined to $DB_DIR.
-  case "$pkgname" in
-    ""|*/*|.|..) error "Invalid pkgname '$pkgname'"; exit 1 ;;
+  validate_pkgname "$pkgname"
+}
+
+ensure_package_variables_are_arrays() {
+  local name
+  for name in source sha256sums depends; do
+    if ! declare -p "$name" >/dev/null 2>&1 || [[ "$(declare -p "$name" 2>/dev/null)" != "declare -a"* ]]; then
+      declare -ga "$name=()"
+    fi
+  done
+}
+
+# Rejects path separators/traversal to keep pkgname confined to $DB_DIR.
+validate_pkgname() {
+  case "$1" in
+    ""|*/*|.|..) error "Invalid pkgname '$1'"; exit 1 ;;
   esac
+}
+
+resolve_uninstall_target() {
+  [ -z "$FILE" ] && usage
+  if [ -f "$FILE" ]; then
+    source_package_file
+  else
+    validate_pkgname "$FILE"
+    pkgname="$FILE"
+  fi
 }
 
 prepare_package_env() {
@@ -410,7 +406,8 @@ prepare_package_env() {
 }
 
 usage() {
-  echo "Usage: $0 [install|uninstall] <package-file> [--force]"
+  echo "Usage: $0 install <package-file> [--force]"
+  echo "       $0 uninstall <package-file|package-name>"
   echo "       $0 [install|uninstall] --file|-F <package-file> [--force]"
   echo "       $0 list   (or: $0 --list)"
   echo
@@ -450,11 +447,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$ACTION" in
-  install|uninstall)
+  install)
     source_package_file
     prepare_package_env
     trap cleanup EXIT
-    "${ACTION}_cmd"
+    install_cmd
+    ;;
+  uninstall)
+    resolve_uninstall_target
+    uninstall_cmd
     ;;
   list)
     list_cmd

@@ -9,6 +9,8 @@ Item {
   Layout.fillWidth: true
   implicitHeight: parent.height
 
+  readonly property bool hasUnreadNotifications: EventBus.unreadNotifications > 0
+
   RowLayout {
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
@@ -120,12 +122,12 @@ Item {
 
     ContainerRectangle {
       implicitWidth: notificationRow.implicitWidth + Settings.marginBig
-      color: EventBus.notificationCenterVisible ? Colors.primary : Colors.background
+      color: (EventBus.notificationCenterVisible || hasUnreadNotifications) ? Colors.primary : Colors.background
 
       ContainerLabel {
         id: notificationRow
         anchors.centerIn: parent
-        color: EventBus.notificationCenterVisible ? Colors.on_primary : Colors.on_background
+        color: (EventBus.notificationCenterVisible || hasUnreadNotifications) ? Colors.on_primary : Colors.on_background
         text: ""
       }
 

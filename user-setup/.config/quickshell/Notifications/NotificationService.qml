@@ -28,6 +28,7 @@ Singleton {
         urgency: n.urgency,
         time: Qt.formatDateTime(new Date(), Settings.dateFormatShort),
       })
+      EventBus.unreadNotifications += 1
       n.tracked = true
     }
   }

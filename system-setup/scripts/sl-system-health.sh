@@ -7,6 +7,7 @@ set -euo pipefail
 
 source /etc/simple-linux/settings.env
 source /etc/simple-linux/lib.sh
+[ -f /etc/simple-linux/settings.local.env ] && source /etc/simple-linux/settings.local.env
 
 PASS=0
 FAIL=0
@@ -182,7 +183,7 @@ check_packages() {
   local expected=()
 
   # Always-installed base packages
-  for var in PACKAGES OTHER_PACKAGES HYPRLAND_PACKAGES; do
+  for var in PACKAGES OTHER_PACKAGES HYPRLAND_PACKAGES ADDITIONAL_PACKAGES; do
     local -a pkgs
     read -ra pkgs <<< "${!var:-}"
     expected+=("${pkgs[@]}")

@@ -2,9 +2,10 @@
 set -euo pipefail
 
 # Called by smartd via "-M exec" when a disk reports a failure.
-# Writes a world-readable .alert file for the user-facing `list-alerts` command.
+# Writes a world-readable .alert file that surfaces as a desktop notification
+# on every login (via `sl-remind notify`) until an admin removes the file.
 
-ALERTS_DIR="${SMART_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
+ALERTS_DIR="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
 device="${SMARTD_DEVICESTRING:-${SMARTD_DEVICE:-unknown}}"
 fail_type="${SMARTD_FAILTYPE:-unknown}"
@@ -14,9 +15,10 @@ mkdir -p "$ALERTS_DIR"
 chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
 
 timestamp="$(date +"%Y-%m-%d_%H-%M-%S-%3N")"
-alert_file="${ALERTS_DIR}/${timestamp}.alert"
+alert_file="${ALERTS_DIR}/critical-${timestamp}.alert"
 
 {
+  printf 'Disk health alert\n'
   printf 'Device: %s\n' "$device"
   printf 'Fail type: %s\n' "$fail_type"
   printf '%s\n' "$message"

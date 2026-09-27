@@ -288,7 +288,20 @@ update_wallpaper() {
   _reload_program hyprpaper
 }
 
+_init_pyenv() {
+  export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
+  if [[ -x "$PYENV_ROOT/bin/pyenv" ]]; then
+    eval "$("$PYENV_ROOT/bin/pyenv" init - bash)"
+  else
+    log_warn "pyenv not found at $PYENV_ROOT/bin/pyenv — run update-packages first"
+  fi
+}
+
 update_python() {
+  if ! command -v pyenv >/dev/null 2>&1; then
+    log_warn "pyenv not installed — skipping python setup"
+    return 0
+  fi
   pyenv install --skip-existing "$SL_PYENV_PYTHON_VER"
   pyenv global $SL_PYENV_PYTHON_VER
   pip install --upgrade pip
@@ -349,7 +362,7 @@ reload_all() {
   run_step update_bashrc "updating bashrc"
   run_step update_yazi_desktop "installing yazi desktop entry"
   run_step update_packages "updating packages"
-  source ~/.bashrc # for pyenv
+  run_step _init_pyenv "initializing pyenv"
   run_step update_python "updating python (pyenv)"
   run_step update_flatpacks "updating flatpacks"
   run_step update_wallpaper "updating wallpaper"

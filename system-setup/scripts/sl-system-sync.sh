@@ -1,14 +1,101 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Standalone sudo command — sources system-wide truth from /etc
-# Installed to /usr/local/bin/sl-system-sync during USB setup.
-# Re-run to apply changes after editing /etc/simple-linux/settings.env.
-
 source /etc/simple-linux/settings.env
 source /etc/simple-linux/lib.sh
+[ -f /etc/simple-linux/settings.local.env ] && source /etc/simple-linux/settings.local.env
 
-sync_pacman() { sudo pacman -Syu --noconfirm; }
+NO_UPDATE=0
+ACCEPT=0
+CHECK_ONLY=0
+REPO="${SYSTEM_WIDE_DEST:-/opt/simple-linux}"
+PACMAN_CONFIRM=""
+
+usage() {
+  echo "Usage: sl-system-sync [--accept] [--no-update] [--check]"
+  echo ""
+  echo "  --accept, -y     Accept all prompts: auto git pull + pacman --noconfirm."
+  echo "  --no-update, -n  Skip the full system upgrade (pacman -Syu)."
+  echo "                   Configured packages are still installed (--needed)."
+  echo "  --check, -c      Fetch and compare only; make no changes."
+  echo "                   Exits 0 when up to date, 1 when an update is available."
+  echo "  -h, --help       Show this help."
+}
+
+local_commit()  { git -C "$REPO" rev-parse HEAD; }
+remote_commit() { git -C "$REPO" rev-parse '@{u}'; }
+
+update_available() {
+  [ "$(local_commit)" != "$(remote_commit)" ]
+}
+
+do_check() {
+  if [ ! -d "$REPO/.git" ]; then
+    log_err "$REPO is not a git repository — cannot check for updates"
+    exit 1
+  fi
+
+  log_step "Fetching remote state"
+  git -C "$REPO" fetch --quiet origin
+
+  if update_available; then
+    log_warn "Update available: $(local_commit) -> $(remote_commit)"
+    return 1
+  fi
+
+  log_ok "Up to date ($(local_commit))"
+  return 0
+}
+
+sync_simple_linux_repo() {
+  if [ ! -d "$REPO/.git" ]; then
+    log_warn "$REPO is not a git repository — skipping simple-linux update check"
+    return 0
+  fi
+
+  do_check || true
+
+  if ! update_available; then
+    log_ok "Already up to date — nothing to do."
+    return 0
+  fi
+
+  if [ "$ACCEPT" -eq 1 ]; then
+    log_step "Pulling latest changes (--accept)"
+  elif [[ ! -t 0 ]]; then
+    log_warn "Not a TTY and --accept not given — skipping simple-linux update"
+    return 0
+  else
+    log_step "New version available: $(local_commit) -> $(remote_commit)"
+    local answer
+    read -rp "  Update simple-linux now? [y/N] " answer
+    case "$answer" in
+      y|Y|yes|Yes|YES) ;;
+      *)
+        log_warn "Skipping simple-linux update; continuing with current version"
+        return 0
+        ;;
+    esac
+  fi
+
+  log_step "Pulling latest changes"
+  if ! git -C "$REPO" pull --ff-only --quiet; then
+    log_err "git pull --ff-only failed. The local repo may have modifications."
+    log_err "Inspect $REPO and resolve, or run: sudo git -C $REPO reset --hard origin/main"
+    exit 1
+  fi
+  log_ok "Repository updated to $(local_commit)"
+
+  run_step "$REPO/system-setup/install-scripts.sh" "installing updated system files"
+}
+
+sync_pacman() {
+  if [[ "$NO_UPDATE" -eq 1 ]]; then
+    log_warn "Skipping full system upgrade (--no-update)"
+    return 0
+  fi
+  sudo pacman -Syu $PACMAN_CONFIRM
+}
 
 enable_multilib() {
   if [[ "$ENABLE_GAMING" != "true" ]]; then
@@ -23,7 +110,14 @@ enable_multilib() {
   log_step "Enabling [multilib] repository"
   sudo sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' /etc/pacman.conf
   log_ok "[multilib] repository enabled"
-  sudo pacman -Syu --noconfirm
+  if [[ "$NO_UPDATE" -eq 1 ]]; then
+    # Refresh-only: the new [multilib] DB is required for the --needed installs
+    # that follow, but we skip the full upgrade per --no-update.
+    log_warn "Refreshing package DB without upgrade (--no-update)"
+    sudo pacman -Sy $PACMAN_CONFIRM
+  else
+    sudo pacman -Syu $PACMAN_CONFIRM
+  fi
 }
 
 detect_and_install_gpu_drivers() {
@@ -54,24 +148,32 @@ detect_and_install_gpu_drivers() {
   if [[ -n "$drivers" ]]; then
     log_ok "Detected GPU(s), installing:${drivers}"
     # shellcheck disable=SC2086
-    sudo pacman -S --noconfirm --needed $drivers
+    sudo pacman -S $PACMAN_CONFIRM --needed $drivers
   else
     log_warn "No recognized GPU; installing mesa as fallback"
-    sudo pacman -S --noconfirm --needed mesa
+    sudo pacman -S $PACMAN_CONFIRM --needed mesa
   fi
 }
 
 # shellcheck disable=SC2086
-install_hyprland() { sudo pacman -S --noconfirm --needed $HYPRLAND_PACKAGES; }
+install_hyprland() { sudo pacman -S $PACMAN_CONFIRM --needed $HYPRLAND_PACKAGES; }
 # shellcheck disable=SC2086
-install_packages() { sudo pacman -S --noconfirm --needed $OTHER_PACKAGES; }
+install_packages() { sudo pacman -S $PACMAN_CONFIRM --needed $OTHER_PACKAGES; }
+
+install_additional_packages() {
+  if [[ -z "${ADDITIONAL_PACKAGES:-}" ]]; then
+    return 0
+  fi
+  # shellcheck disable=SC2086
+  sudo pacman -S $PACMAN_CONFIRM --needed $ADDITIONAL_PACKAGES
+}
 
 install_gaming_packages() {
   if [[ "$ENABLE_GAMING" != "true" ]]; then
     return 0
   fi
   # shellcheck disable=SC2086
-  sudo pacman -S --noconfirm --needed $GAMING_PACKAGES
+  sudo pacman -S $PACMAN_CONFIRM --needed $GAMING_PACKAGES
   # shellcheck disable=SC2086
   sudo systemctl enable --now $GAMING_SERVICES
 
@@ -105,7 +207,7 @@ install_dev_extras() {
     return 0
   fi
   # shellcheck disable=SC2086
-  sudo pacman -S --noconfirm --needed $DEV_EXTRA_PACKAGES
+  sudo pacman -S $PACMAN_CONFIRM --needed $DEV_EXTRA_PACKAGES
 }
 
 create_desktop_users() {
@@ -178,7 +280,7 @@ setup_smartd() {
     log_ok "smartd.conf already configured, skipping"
   else
     sudo tee "$smartd_conf" > /dev/null <<SMARTD_CONF
-# simple-linux managed — S.M.A.R.T. monitoring, alerts written to ${SMART_ALERTS_DIR:-/var/lib/simple-linux/alerts}
+# simple-linux managed — S.M.A.R.T. monitoring, alerts written to ${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}
 ${exec_line}
 SMARTD_CONF
     log_ok "smartd.conf configured"
@@ -186,6 +288,12 @@ SMARTD_CONF
 
   sudo systemctl enable --now smartd
   log_ok "smartd service enabled"
+}
+
+setup_reminders() {
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now sl-remind-update.timer sl-remind-btrfs.timer
+  log_ok "notification reminder timers enabled"
 }
 
 configure_wireless_regdom() {
@@ -334,12 +442,51 @@ preflight_checks() {
 }
 
 main() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --accept|-y)
+        ACCEPT=1
+        PACMAN_CONFIRM="--noconfirm"
+        shift
+        ;;
+      --no-update|-n)
+        NO_UPDATE=1
+        shift
+        ;;
+      --check|-c)
+        CHECK_ONLY=1
+        shift
+        ;;
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      *)
+        log_err "Unknown option: $1"
+        usage >&2
+        exit 1
+        ;;
+    esac
+  done
+
   trap 'sudo -k 2>/dev/null || true' EXIT INT TERM
   setup_logging
+
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    if do_check; then
+      exit 0
+    else
+      exit 1
+    fi
+  fi
+
   prime_sudo_cache
 
   # Pre-flight validation
   run_step preflight_checks "running preflight checks"
+
+  # Update simple-linux itself (git pull) before applying config
+  run_step sync_simple_linux_repo "checking for simple-linux updates"
 
   # Desktop environment
   run_step sync_pacman "synchronizing pacman"
@@ -350,8 +497,10 @@ main() {
   run_step install_hyprland "installing hyprland"
   run_step install_packages "installing packages"
   run_step install_dev_extras "installing development extras"
+  run_step install_additional_packages "installing additional packages"
   run_step enable_system_services "enabling system services"
   run_step setup_smartd "configuring S.M.A.R.T. monitoring (smartd)"
+  run_step setup_reminders "enabling notification reminder timers"
   run_step configure_wireless_regdom "configuring wireless regulatory domain"
 
   # Secure Boot — 3-way check: skip/configure/warn
@@ -362,4 +511,4 @@ main() {
   log_step "System setup updated — reboot for all changes to take effect"
 }
 
-main
+main "$@"

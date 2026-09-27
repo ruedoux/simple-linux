@@ -10,9 +10,9 @@ Run [setup.sh](setup.sh) to bootstrap a user environment:
 ./user-setup/setup.sh
 ```
 
-Copies dotfiles via rsync (preserving wallpapers and user `bashrc-extension.sh`), starts PipeWire and HyprSunset user services, configures Hyprland autostart via `.bash_profile`, creates `hyprland-session.target` for session management, then runs `sl-controller.sh reload-all`.
+Copies dotfiles via rsync (preserving wallpapers, user `bashrc-extension.sh`, and any user-added packages in `packages/`), starts PipeWire and HyprSunset user services, configures Hyprland autostart via `.bash_profile`, creates `hyprland-session.target` for session management, then runs `sl-controller.sh reload-all`.
 
-Safe to run multiple times, but overrides most dotfiles (excluding wallpapers and `bashrc-extension.sh`).
+Safe to run multiple times, but overrides most dotfiles (excluding wallpapers, `bashrc-extension.sh`, and user-added `.pkg.sh` files).
 
 ---
 
@@ -114,7 +114,7 @@ package() {
 ```bash
 sl-install-package.sh install <package-file>            # Install
 sl-install-package.sh install <package-file> --force    # Reinstall regardless of version
-sl-install-package.sh uninstall <package-file>          # Remove all tracked files
+sl-install-package.sh uninstall <package-file|package-name>  # Remove all tracked files (file or bare name)
 sl-install-package.sh list                              # List installed packages + versions
 ```
 
@@ -151,9 +151,19 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 | `backup` | Restic backup (local, remote, push, pull). Accepts a `--config <file>` flag pointing to a standalone JSON config with repository details. |
 | `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with health checks). |
 | `git-switch` | Switch git accounts and SSH keys per session. Reads profiles from a configurable directory. |
-| `notifications` | Desktop notifications and reminders. S.M.A.R.T. alerts are produced by the system-level `smartd` service (see system-setup) and surfaced via `list-alerts` from `/var/lib/simple-linux/alerts`. |
 | `opencode` | Run OpenCode in a container. |
-| `wireguard` | WireGuard setup (WIP — remote and local modes). |
+
+### Notifications
+
+Notifications are managed at the system level (see `system-setup`). `smartd`
+and the `sl-remind` timers write world-readable `.alert` files to
+`/var/lib/simple-linux/alerts`. On every login, Quickshell runs
+`sl-remind notify`, which turns each `.alert` file into a desktop notification.
+Notifications persist until an admin removes the corresponding file.
+
+Quickshell also runs `sl-remind check-update` on startup — a read-only git check
+of `/opt/simple-linux` that sends a desktop notification when a new version is
+available, prompting you to run `sudo sl-system-sync`.
 
 ---
 

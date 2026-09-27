@@ -10,6 +10,16 @@ import "Wallpaper"
 ShellRoot {
   id: root
 
+  Timer {
+    interval: 2000
+    running: true
+    repeat: false
+    onTriggered: {
+      EventBus.runDetached(["/usr/local/bin/sl-remind", "notify"], Settings.logPath)
+      EventBus.runDetached(["/usr/local/bin/sl-remind", "check-update"], Settings.logPath)
+    }
+  }
+
   Bar {
     modelData: Settings.screen
   }

@@ -22,9 +22,14 @@ copy_dots() {
     fi
     if [[ "$name" == "simple-linux" ]]; then
       preserve_args+=(--exclude=bashrc-extension.sh)
+      preserve_args+=(--exclude=packages/)
     fi
 
     rsync -a --delete "${preserve_args[@]}" "$subdir" "$dest/"
+
+    if [ -d "$subdir/packages" ]; then
+      rsync -a "$subdir/packages/" "$dest/packages/"
+    fi
 
     if [ -d "$subdir/files" ]; then
       rsync -a --ignore-existing "$subdir/files/" "$dest/files/"

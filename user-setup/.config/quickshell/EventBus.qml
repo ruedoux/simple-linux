@@ -7,6 +7,7 @@ Singleton {
   id: eventBus
 
   property bool notificationCenterVisible: false
+  property int unreadNotifications: 0
   property bool menuVisible: false
   property bool wallpaperVisible: false
 

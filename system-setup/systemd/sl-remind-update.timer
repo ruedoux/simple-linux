@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly system update reminder
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+Unit=sl-remind@update.service
+
+[Install]
+WantedBy=timers.target

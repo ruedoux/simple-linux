@@ -1,0 +1,10 @@
+[Unit]
+Description=Monthly btrfs health-check reminder
+
+[Timer]
+OnCalendar=monthly
+Persistent=true
+Unit=sl-remind@btrfs.service
+
+[Install]
+WantedBy=timers.target

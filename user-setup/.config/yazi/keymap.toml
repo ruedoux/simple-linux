@@ -376,6 +376,3 @@ for  = "unix"
 run  = 'shell "$SHELL" --block'
 desc = "Open $SHELL here"
 
-[[mgr.prepend_keymap]]
-on  = "<C-n>"
-run = "shell -- dragon-drop -x -i -T %h"

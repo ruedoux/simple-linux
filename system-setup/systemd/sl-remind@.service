@@ -1,0 +1,6 @@
+[Unit]
+Description=Create simple-linux reminder (%i)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sl-remind %i
