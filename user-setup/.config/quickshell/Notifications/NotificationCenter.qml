@@ -110,10 +110,12 @@ PanelWindow {
         model: NotificationService.history
         spacing: Settings.marginMedium
 
-        ScrollBar.vertical: ScrollBar {
+        ScrollBar.vertical: StyledScrollBar {
           id: vbar
-          policy: ScrollBar.AsNeeded
-          implicitWidth: Settings.marginSmall
+        }
+
+        FastScroll {
+          stepSize: Settings.menuItemSize + Settings.marginMedium
         }
 
         delegate: ContainerRectangle {

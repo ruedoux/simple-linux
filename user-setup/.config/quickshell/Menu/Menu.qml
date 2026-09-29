@@ -159,10 +159,12 @@ PanelWindow {
         spacing: Settings.marginSmall
         currentIndex: menu.selectedIndex
 
-        ScrollBar.vertical: ScrollBar {
+        ScrollBar.vertical: StyledScrollBar {
           id: vbar
-          policy: ScrollBar.AsNeeded
-          implicitWidth: Settings.marginSmall
+        }
+
+        FastScroll {
+          stepSize: Settings.menuItemSize + Settings.marginSmall
         }
 
         delegate: ContainerRectangle {

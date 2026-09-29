@@ -52,6 +52,9 @@ Singleton {
   readonly property int notificationTimeoutMs: 5000
   readonly property int notificationWidth: fontSize * 20
 
+  // Scroll
+  readonly property int scrollSpeed: 16
+
   // Menu
   readonly property int menuHeight: Math.round(screenHeight * 0.55)
   readonly property int menuWidth: Math.round(screenWidth * 0.31)

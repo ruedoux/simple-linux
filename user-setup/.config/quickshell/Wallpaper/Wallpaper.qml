@@ -161,10 +161,13 @@ PanelWindow {
         model: WallpaperService.files
         spacing: Settings.marginMedium
 
-        ScrollBar.horizontal: ScrollBar {
+        ScrollBar.horizontal: StyledScrollBar {
           id: hbar
-          policy: ScrollBar.AsNeeded
-          implicitHeight: Settings.marginSmall
+        }
+
+        FastScroll {
+          horizontal: true
+          stepSize: Settings.wallpaperThumbnailSize + Settings.marginMedium
         }
 
         delegate: WallpaperThumbnail {

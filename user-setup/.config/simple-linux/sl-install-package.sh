@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Populated by `source "$FILE"` and normalized by ensure_package_variables_are_arrays.
+# Declared here so shellcheck recognizes them.
+declare -ga source=() sha256sums=() depends=()
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
