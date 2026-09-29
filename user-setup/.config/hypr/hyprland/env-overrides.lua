@@ -1,4 +1,6 @@
 hl.env("HYPRCURSOR_THEME", "rose-pine-hyprcursor")
 hl.env("HYPRCURSOR_SIZE", "48")
+hl.env("SL_KB_LAYOUT", "pl")
 hl.env("TERMINAL", "kitty")
 hl.env("QT_SCALE_FACTOR", "2")
+hl.env("SL_WORKSPACE_COUNT", "6")

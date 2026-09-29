@@ -5,9 +5,9 @@ set -euo pipefail
 # Installed to /usr/local/bin/sl-system-health during USB setup.
 # Reports system health status. Read-only — never modifies the system.
 
-source /etc/simple-linux/settings.env
+source /etc/simple-linux/settings.default.env
 source /etc/simple-linux/lib.sh
-[ -f /etc/simple-linux/settings.local.env ] && source /etc/simple-linux/settings.local.env
+[ -f /etc/simple-linux/settings.env ] && source /etc/simple-linux/settings.env
 
 PASS=0
 FAIL=0
@@ -153,7 +153,7 @@ check_disk_health() {
 check_toolkit_deps() {
   local deps_str="${SL_TOOLSET_DEPS:-}"
   if [ -z "$deps_str" ]; then
-    check_skip "Toolkit deps: SL_TOOLSET_DEPS not set in settings.env"
+    check_skip "Toolkit deps: SL_TOOLSET_DEPS not set in settings.default.env"
     return
   fi
 

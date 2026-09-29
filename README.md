@@ -29,6 +29,6 @@
 
 ## See Also
 
-- [system-setup/README.md](system-setup/README.md) — Full install documentation, prerequisites, quick start, and all `settings.env` options
+- [system-setup/README.md](system-setup/README.md) — Full install documentation, prerequisites, quick start, and all `settings.default.env` options
 - [user-setup/README.md](user-setup/README.md) — User setup, controller commands, theming pipeline, package manager, CLI tools, and desktop components
 - [Wallpaper attributions](user-setup/.config/simple-linux/files/README.md)

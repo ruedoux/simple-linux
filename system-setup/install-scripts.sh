@@ -8,19 +8,11 @@ SETTINGS_DIR="$DESTDIR/etc/simple-linux"
 
 echo "Syncing system files from repo..."
 
-# One-time migration: settings.env is now managed (overwritten). If the user had
-# customized it before settings.local.env existed, preserve a backup so nothing
-# is silently lost.
-if [ -f "$SETTINGS_DIR/settings.env" ] && [ ! -f "$SETTINGS_DIR/settings.local.env" ]; then
-  cp "$SETTINGS_DIR/settings.env" "$SETTINGS_DIR/settings.env.bck.$(date +%Y%m%d%H%M%S)"
-  echo "Backed up existing settings.env -> settings.env.bck.* (review and merge customizations into settings.local.env)"
-fi
-
-install -D -m 644 "$SCRIPT_ROOT/settings.env" "$SETTINGS_DIR/settings.env"
+install -D -m 644 "$SCRIPT_ROOT/settings.default.env" "$SETTINGS_DIR/settings.default.env"
 
 # User overrides: installed once, never overwritten on update.
-if [ ! -f "$SETTINGS_DIR/settings.local.env" ]; then
-  install -D -m 644 "$SCRIPT_ROOT/settings.local.env" "$SETTINGS_DIR/settings.local.env"
+if [ ! -f "$SETTINGS_DIR/settings.env" ]; then
+  install -D -m 644 "$SCRIPT_ROOT/settings.env" "$SETTINGS_DIR/settings.env"
 fi
 
 install -D -m 644 "$SCRIPT_ROOT/.lib.sh" "$SETTINGS_DIR/lib.sh"

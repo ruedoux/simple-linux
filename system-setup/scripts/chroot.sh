@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source /root/settings.env
+source /root/settings.default.env
+[ -f /root/settings.env ] && source /root/settings.env
 source /root/.lib.sh
 
 setup_locale() {

@@ -6,7 +6,7 @@ import QtQuick
 Singleton {
   // Overrides
   readonly property string monitorName: "${SL_MAIN_MONITOR}"
-  readonly property real scale: ${SL_UI_SCALE} * 0.7
+  readonly property real scale: ${SL_UI_SCALE} * ${SL_QS_SCALE}
   readonly property string fontFamily: "${SL_FONT}"
   readonly property int fontSize: ${SL_FONT_SIZE} * scale
   readonly property string terminal: "${SL_TERMINAL}"
@@ -34,7 +34,7 @@ Singleton {
   readonly property real screenHeight: screen?.height ?? 1080
 
   // Margins
-  readonly property int border: Math.max(1, Math.round(2))
+  readonly property int border: 2
   readonly property int marginBig: Math.round(12 * scale)
   readonly property int marginMedium: Math.round(6 * scale)
   readonly property int marginSmall: Math.round(3 * scale)
@@ -42,12 +42,12 @@ Singleton {
 
   // Bar
   readonly property int barHeight: Math.round(fontSize * 1.6)
-  readonly property int workspaceNumber: 6
-  readonly property string dateFormat: "HH:mm yyyy/MM/dd"
-  readonly property string dateFormatShort: "HH:mm"
+  readonly property int workspaceNumber: ${SL_WORKSPACE_COUNT}
+  readonly property string dateFormat: "${SL_DATE_FORMAT}"
+  readonly property string dateFormatShort: "${SL_DATE_FORMAT_SHORT}"
 
   // Notifications
-  readonly property int notificationTimeoutMs: 5000
+  readonly property int notificationTimeoutMs: ${SL_NOTIFICATION_TIMEOUT_MS}
   readonly property int notificationWidth: fontSize * 20
 
   // Menu

@@ -8,11 +8,12 @@ export SL_TEMPLATE_DIR="$SL_ROOT_DIR/templates"
 export SL_TEMPLATES_JSON="$SL_TEMPLATE_DIR/templates.json"
 export SL_WALLPAPERS_DIR="$SL_ROOT_DIR/files/wallpapers"
 export SL_WALLPAPER_SELECTED_FILE="$SL_WALLPAPERS_DIR/.selected"
+export SL_CONFIG_DEFAULT_PATH="$SL_ROOT_DIR/config.default.env"
 export SL_CONFIG_PATH="$SL_ROOT_DIR/config.env"
 export WALLPAPER_DEST_PATH="$SL_ROOT_DIR/files/wallpaper.png"
 export SL_LOG_FILE="${SL_LOG_FILE:-$SL_ROOT_DIR/sl-controller.log}"
 source "$SL_ROOT_DIR/.sl-lib.sh"
-set -a; source "$SL_CONFIG_PATH"; set +a;
+set -a; source "$SL_CONFIG_DEFAULT_PATH"; source "$SL_CONFIG_PATH"; set +a;
 
 # If not running in a terminal (e.g. via nohup or triggered by another process),
 # redirect all output to log file to prevent nohup.out pollution
@@ -135,12 +136,31 @@ _modify_config() {
   fi
 
   if grep -q "^${variable}=" "$SL_CONFIG_PATH"; then
-    sed -i.bak "s|^${variable}=.*|${variable}=${value}|" "$SL_CONFIG_PATH"
+    sed -i.bak "s|^${variable}=.*|${variable}=\"${value}\"|" "$SL_CONFIG_PATH"
     rm -f "${SL_CONFIG_PATH}.bak"
   else
-    echo "Variable '$variable' does not exist in file '$SL_CONFIG_PATH'"
-    return 1
+    printf '%s="%s"\n' "$variable" "$value" >> "$SL_CONFIG_PATH"
   fi
+}
+
+_validate_config() {
+  local var val
+  for var in SL_WORKSPACE_COUNT SL_NOTIFICATION_TIMEOUT_MS SL_FONT_SIZE; do
+    val="${!var:-}"
+    if ! [[ "$val" =~ ^[0-9]+$ ]] || [ "$val" -lt 1 ]; then
+      log_err "Invalid $var='$val' in $SL_CONFIG_PATH — must be a positive integer"
+      return 1
+    fi
+  done
+
+  for var in SL_QS_SCALE SL_UI_SCALE; do
+    val="${!var:-}"
+    if ! awk -v n="$val" 'BEGIN { exit !(n ~ /^[0-9]+([.][0-9]+)?$/ && n + 0 > 0) }'; then
+      log_err "Invalid $var='$val' in $SL_CONFIG_PATH — must be a positive number"
+      return 1
+    fi
+  done
+  return 0
 }
 
 switch_theme_mode() {
@@ -177,7 +197,7 @@ update_yazi_desktop() {
 [Desktop Entry]
 Type=Application
 Name=Yazi File Manager
-Exec=${SL_TERMINAL:-kitty} --class yazi -e yazi %U
+Exec=${SL_TERMINAL} --class yazi -e yazi %U
 Terminal=false
 Categories=System;FileTools;FileManager;
 MimeType=inode/directory;
@@ -394,6 +414,8 @@ case "$SL_THEME_MODE" in
     return 1
     ;;
 esac
+
+_validate_config || exit 1
 
 case "${1:-}" in
   reload-all)

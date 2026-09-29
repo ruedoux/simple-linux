@@ -5,7 +5,8 @@ SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 SETUP_SCRIPT_DIR="${SETUP_SCRIPT_DIR:-$(dirname "$SCRIPT_DIR")}"
 REPO_ROOT="$(dirname "$SETUP_SCRIPT_DIR")"
 
-source "$SETUP_SCRIPT_DIR/settings.env"
+source "$SETUP_SCRIPT_DIR/settings.default.env"
+[ -f "$SETUP_SCRIPT_DIR/settings.env" ] && source "$SETUP_SCRIPT_DIR/settings.env"
 source "$SETUP_SCRIPT_DIR/.lib.sh"
 
 verify_checked
@@ -202,13 +203,14 @@ EOF
 }
 
 run_chroot_script() {
-  cp "$SETUP_SCRIPT_DIR/settings.env" /mnt/root/settings.env
+  cp "$SETUP_SCRIPT_DIR/settings.default.env" /mnt/root/settings.default.env
+  [ -f "$SETUP_SCRIPT_DIR/settings.env" ] && cp "$SETUP_SCRIPT_DIR/settings.env" /mnt/root/settings.env
   cp "$SETUP_SCRIPT_DIR/.lib.sh" /mnt/root/.lib.sh
   cp "$SCRIPT_DIR/chroot.sh" /mnt/root/chroot.sh
   chmod +x /mnt/root/chroot.sh
 
   arch-chroot /mnt /root/chroot.sh
-  rm /mnt/root/chroot.sh /mnt/root/settings.env /mnt/root/.lib.sh
+  rm /mnt/root/chroot.sh /mnt/root/settings.default.env /mnt/root/settings.env /mnt/root/.lib.sh
 }
 
 copy_repository() {

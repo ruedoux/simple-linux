@@ -4,7 +4,8 @@ set -euo pipefail
 SETUP_SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 export SETUP_SCRIPT_DIR
 
-source "$SETUP_SCRIPT_DIR/settings.env"
+source "$SETUP_SCRIPT_DIR/settings.default.env"
+[ -f "$SETUP_SCRIPT_DIR/settings.env" ] && source "$SETUP_SCRIPT_DIR/settings.env"
 source "$SETUP_SCRIPT_DIR/.lib.sh"
 
 verify_checked

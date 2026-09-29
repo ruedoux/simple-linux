@@ -9,13 +9,21 @@ RESET='\033[0m'
 
 # Source config.env if it exists (relative to the tools/ directory)
 SL_ROOT_DIR="${SL_ROOT_DIR:-$(dirname "$TOOLSET_SCRIPT_DIR")}"
+SL_CONFIG_DEFAULT_PATH="${SL_CONFIG_DEFAULT_PATH:-$SL_ROOT_DIR/config.default.env}"
 SL_CONFIG_PATH="${SL_CONFIG_PATH:-$SL_ROOT_DIR/config.env}"
+if [ -f "$SL_CONFIG_DEFAULT_PATH" ]; then
+    set -a; source "$SL_CONFIG_DEFAULT_PATH"; set +a
+fi
 if [ -f "$SL_CONFIG_PATH" ]; then
     set -a; source "$SL_CONFIG_PATH"; set +a
 fi
 
 # Source system settings if available (system-wide truth, installed by USB setup)
+SL_SETTINGS_DEFAULT_PATH="${SL_SETTINGS_DEFAULT_PATH:-/etc/simple-linux/settings.default.env}"
 SL_SETTINGS_PATH="${SL_SETTINGS_PATH:-/etc/simple-linux/settings.env}"
+if [ -f "$SL_SETTINGS_DEFAULT_PATH" ]; then
+    set -a; source "$SL_SETTINGS_DEFAULT_PATH"; set +a
+fi
 if [ -f "$SL_SETTINGS_PATH" ]; then
     set -a; source "$SL_SETTINGS_PATH"; set +a
 fi

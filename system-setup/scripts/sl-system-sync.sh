@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source /etc/simple-linux/settings.env
+source /etc/simple-linux/settings.default.env
 source /etc/simple-linux/lib.sh
-[ -f /etc/simple-linux/settings.local.env ] && source /etc/simple-linux/settings.local.env
+[ -f /etc/simple-linux/settings.env ] && source /etc/simple-linux/settings.env
 
 NO_UPDATE=0
 ACCEPT=0

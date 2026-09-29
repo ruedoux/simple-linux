@@ -36,7 +36,8 @@ cd /tmp/simple-linux/system-setup
 
 ### 2. Configure
 
-Edit `settings.env`. The critical settings are:
+Copy the settings you want to change from `settings.default.env` into
+`settings.env` and edit them there. The critical settings are:
 
 - `CHECKED` — must be `"true"` for scripts to run (safety gate)
 - `DRIVE` — target disk (e.g. `/dev/nvme0n1`, `/dev/sda`)
@@ -44,7 +45,7 @@ Edit `settings.env`. The critical settings are:
 - `ENABLE_GAMING` — set to `"true"` to install Steam, gamescope, lact, and enable gaming group restrictions
 - `ENABLE_DEV_EXTRAS` — set to `"true"` to install container tooling (nerdctl, buildkit, rootlesskit), kubectl, QEMU/libvirt/virt-manager, dotnet 9.0 & 10.0 SDKs, yt-dlp, and additional development tools
 
-> See `settings.env` for the full list of tunable settings. Other commonly-edited
+> See `settings.default.env` for the full list of tunable settings. Other commonly-edited
 > settings include GPU driver variables (`GPU_NVIDIA_DRIVERS`, `GPU_AMD_DRIVERS`,
 > `GPU_INTEL_DRIVERS`), `SWAP_SIZE`, `LOCALES`, `KERNELS`, and `WIRELESS_REGDOM`.
 
@@ -113,14 +114,14 @@ such as package removals or `.pacnew` config-file questions. Use `--accept` (or
 At login, Quickshell runs `sl-remind check-update`, a read-only check that
 notifies you when a new version is available in `/opt/simple-linux`.
 
-#### Local overrides (`settings.local.env`)
+#### Overrides (`settings.env`)
 
-`/etc/simple-linux/settings.env` is **managed and overwritten on update** — don't
-edit it. Put your changes in `/etc/simple-linux/settings.local.env`, which is
-sourced right after `settings.env` and never overwritten:
+`/etc/simple-linux/settings.default.env` is **managed and overwritten on update** — don't
+edit it. Put your changes in `/etc/simple-linux/settings.env`, which is
+sourced right after `settings.default.env` and never overwritten:
 
 ```bash
-# /etc/simple-linux/settings.local.env
+# /etc/simple-linux/settings.env
 ADDITIONAL_PACKAGES="foo bar"      # extra packages installed by sl-system-sync
 PACKAGES="${PACKAGES} baz"         # or override any managed variable directly
 ```

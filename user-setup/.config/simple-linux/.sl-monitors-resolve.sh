@@ -13,8 +13,13 @@ monitors_resolve() {
   # shellcheck disable=SC1090
   source "$SL_ROOT_DIR/.sl-lib.sh"
 
-  # Load config (non-fatal if config.env is missing)
+  # Load config (non-fatal if either file is missing): managed defaults first,
+  # then user overrides.
   set -a
+  if [ -f "$SL_ROOT_DIR/config.default.env" ]; then
+    # shellcheck disable=SC1091
+    source "$SL_ROOT_DIR/config.default.env"
+  fi
   if [ -f "$SL_ROOT_DIR/config.env" ]; then
     # shellcheck disable=SC1091
     source "$SL_ROOT_DIR/config.env"
@@ -109,8 +114,14 @@ monitors_resolve() {
   monitor_blocks="${monitor_blocks%"$'\n'"}"
 
   # --- Generate workspace blocks ---
+  local workspace_count="${SL_WORKSPACE_COUNT}"
+  if ! [[ "$workspace_count" =~ ^[0-9]+$ ]] || [ "$workspace_count" -lt 1 ]; then
+    log_err "SL_WORKSPACE_COUNT must be a positive integer, got '$workspace_count'"
+    return 1
+  fi
+
   local workspace_blocks=""
-  for ws in {1..6}; do
+  for ws in $(seq 1 "$workspace_count"); do
     workspace_blocks+="hl.workspace_rule({ workspace = \"$ws\", monitor = \"$main_monitor\" })"$'\n'
   done
   workspace_blocks="${workspace_blocks%"$'\n'"}"

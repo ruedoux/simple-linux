@@ -10,6 +10,10 @@ set -euo pipefail
 # Alert files live in NOTIFY_ALERTS_DIR (world-readable). They persist until an
 # admin removes them, so the notification repeats on every login until resolved.
 
+if [ -f /etc/simple-linux/settings.default.env ]; then
+  # shellcheck disable=SC1091
+  source /etc/simple-linux/settings.default.env
+fi
 if [ -f /etc/simple-linux/settings.env ]; then
   # shellcheck disable=SC1091
   source /etc/simple-linux/settings.env

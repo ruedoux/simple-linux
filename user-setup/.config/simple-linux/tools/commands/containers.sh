@@ -4,29 +4,34 @@ set -euo pipefail
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
 . "${TOOLSET_SCRIPT_DIR}/global.sh"
 
-DEFAULT_CONFIG="${SL_CONTAINERS_CONFIG_FILE:-}"
 DEFAULT_COMPOSE="${SL_CONTAINERS_COMPOSE_FILE:-}"
 
 usage() {
   echo "Usage:"
-  echo "  $SCRIPT_NAME up-all   [-c|--config-file FILE] [-f|--compose-file FILE]"
-  echo "  $SCRIPT_NAME down-all [-c|--config-file FILE] [-f|--compose-file FILE]"
-  echo "  $SCRIPT_NAME up       [-c|--config-file FILE] [-f|--compose-file FILE] -n|--container-name NAME"
-  echo "  $SCRIPT_NAME down     [-c|--config-file FILE] [-f|--compose-file FILE] -n|--container-name NAME"
-  echo "  $SCRIPT_NAME restart  [-c|--config-file FILE] [-f|--compose-file FILE] -n|--container-name NAME"
+  echo "  $SCRIPT_NAME up-all   [-f|--compose-file FILE]"
+  echo "  $SCRIPT_NAME down-all [-f|--compose-file FILE]"
+  echo "  $SCRIPT_NAME up       [-f|--compose-file FILE] -n|--container-name NAME"
+  echo "  $SCRIPT_NAME down     [-f|--compose-file FILE] -n|--container-name NAME"
+  echo "  $SCRIPT_NAME restart  [-f|--compose-file FILE] -n|--container-name NAME"
 }
 
-run_health_check() {
+read_healthcheck() {
   local container="$1"
-  local health_check="$2"
-  local retries="${3:-10}"
-  local delay="${4:-5}"
-  local i
+  nerdctl inspect -f '{{index .Config.Labels "sl.healthcheck"}}' "$container" 2>/dev/null || true
+}
 
-  [[ -z "$health_check" ]] && return 0
+wait_until_healthy() {
+  local container="$1"
+  local health_check retries=10 delay=5 i
+
+  health_check="$(read_healthcheck "$container")"
+
+  case "$health_check" in
+    ""|"<nil>"|"<no value>") return 0 ;;
+  esac
 
   for ((i=1; i<=retries; i++)); do
-    info Running health check: "$health_check"
+    info "Running health check: $health_check"
     if sh -c "$health_check"; then
       return 0
     fi
@@ -37,69 +42,42 @@ run_health_check() {
   return 1
 }
 
-start_container() {
-  local container="$1"
-  local health_check="$2"
-  local compose_file="$3"
-  local running
+wait_service_healthy() {
+  local service="$1"
+  local container
 
-  if nerdctl inspect "$container" >/dev/null 2>&1; then
-    running="$(nerdctl inspect -f '{{.State.Running}}' "$container" 2>/dev/null || true)"
-    if [[ "$running" == "true" ]]; then
-      info "Container already running, skipping: $container"
-      return 0
-    fi
-  fi
-
-  info "Starting container: $container"
-  nerdctl compose -f "$compose_file" up -p "$container" -d "$container"
-  run_health_check "$container" "$health_check"
-  info "Started container: $container"
-}
-
-remove_container() {
-  local container="$1"
-  local compose_file="$2"
-
-  if ! nerdctl inspect "$container" >/dev/null 2>&1; then
-    info "Container does not exist, skipping: $container"
+  container="$(nerdctl compose -p "$service" -f "$COMPOSE_FILE" ps -q "$service")"
+  if [[ -z "$container" ]]; then
+    debug "No container resolved for service: $service; skipping health check"
     return 0
   fi
 
-  info "Removing container: $container"
-  nerdctl compose -f "$compose_file" rm -s -f -p "$container" "$container"
-  info "Removed container: $container"
+  wait_until_healthy "$container"
 }
 
-get_container_healthcheck() {
-  local config_file="$1"
-  local container_name="$2"
+start_service() {
+  local service="$1"
 
-  jq -r --arg name "$container_name" '
-    .[] | select(.container == $name) | .healthCheck // empty
-  ' "$config_file"
+  info "Starting service: $service"
+  nerdctl compose -p "$service" -f "$COMPOSE_FILE" up -d "$service"
+  wait_service_healthy "$service"
+  info "Started service: $service"
 }
 
-container_exists_in_config() {
-  local config_file="$1"
-  local container_name="$2"
+remove_service() {
+  local service="$1"
 
-  jq -e --arg name "$container_name" '
-    .[] | select(.container == $name)
-  ' "$config_file" >/dev/null
+  info "Removing service: $service"
+  nerdctl compose -p "$service" -f "$COMPOSE_FILE" rm -s -f "$service"
+  info "Removed service: $service"
 }
 
 parse_common_args() {
-  CONFIG_FILE="$DEFAULT_CONFIG"
   COMPOSE_FILE="$DEFAULT_COMPOSE"
   CONTAINER_NAME=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -c|--config-file)
-        CONFIG_FILE="$2"
-        shift 2
-        ;;
       -f|--compose-file)
         COMPOSE_FILE="$2"
         shift 2
@@ -120,8 +98,6 @@ parse_common_args() {
 }
 
 validate_files() {
-  [[ -n "${CONFIG_FILE:-}" ]] || { error "Config file not provided. Use -c/--config-file or set SL_CONTAINERS_CONFIG_FILE in config.env"; return 1; }
-  [[ -f "$CONFIG_FILE" ]] || { error "Config file not found: $CONFIG_FILE"; return 1; }
   [[ -n "${COMPOSE_FILE:-}" ]] || { error "Compose file not provided. Use -f/--compose-file or set SL_CONTAINERS_COMPOSE_FILE in config.env"; return 1; }
   [[ -f "$COMPOSE_FILE" ]] || { error "Compose file not found: $COMPOSE_FILE"; return 1; }
 }
@@ -130,23 +106,20 @@ up_all_containers() {
   parse_common_args "$@" || return 1
   validate_files || return 1
 
-  while read -r obj; do
-    local container health_check
-    container="$(jq -r '.container' <<< "$obj")"
-    health_check="$(jq -r '.healthCheck // empty' <<< "$obj")"
-    start_container "$container" "$health_check" "$COMPOSE_FILE"
-  done < <(jq -c '.[]' "$CONFIG_FILE")
+  while read -r service; do
+    [[ -n "$service" ]] || continue
+    start_service "$service"
+  done < <(nerdctl compose -f "$COMPOSE_FILE" config --services)
 }
 
 down_all_containers() {
   parse_common_args "$@" || return 1
   validate_files || return 1
 
-  while read -r obj; do
-    local container
-    container="$(jq -r '.container' <<< "$obj")"
-    remove_container "$container" "$COMPOSE_FILE"
-  done < <(jq -c '.[]' "$CONFIG_FILE")
+  while read -r service; do
+    [[ -n "$service" ]] || continue
+    remove_service "$service"
+  done < <(nerdctl compose -f "$COMPOSE_FILE" config --services)
 }
 
 up_container() {
@@ -159,14 +132,7 @@ up_container() {
     return 1
   fi
 
-  if ! container_exists_in_config "$CONFIG_FILE" "$CONTAINER_NAME"; then
-    echo "Container not found in config: $CONTAINER_NAME"
-    return 1
-  fi
-
-  local health_check
-  health_check="$(get_container_healthcheck "$CONFIG_FILE" "$CONTAINER_NAME")"
-  start_container "$CONTAINER_NAME" "$health_check" "$COMPOSE_FILE"
+  start_service "$CONTAINER_NAME"
 }
 
 down_container() {
@@ -179,12 +145,22 @@ down_container() {
     return 1
   fi
 
-  if ! container_exists_in_config "$CONFIG_FILE" "$CONTAINER_NAME"; then
-    echo "Container not found in config: $CONTAINER_NAME"
+  remove_service "$CONTAINER_NAME"
+}
+
+restart_container() {
+  parse_common_args "$@" || return 1
+  validate_files || return 1
+
+  if [[ -z "$CONTAINER_NAME" ]]; then
+    echo "Missing container name"
+    usage
     return 1
   fi
 
-  remove_container "$CONTAINER_NAME" "$COMPOSE_FILE"
+  info "Restarting service: $CONTAINER_NAME"
+  remove_service "$CONTAINER_NAME"
+  start_service "$CONTAINER_NAME"
 }
 
 setup_networks() {
@@ -210,8 +186,7 @@ case "${1:-}" in
     ;;
   restart)
     shift
-    down_container "$@"
-    up_container "$@"
+    restart_container "$@"
     ;;
   *)
     usage
