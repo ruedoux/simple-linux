@@ -18,4 +18,5 @@ vim.pack.add({
   "https://github.com/L3MON4D3/LuaSnip",
   "https://github.com/romgrk/barbar.nvim",
   "https://github.com/nvim-tree/nvim-web-devicons",
+  "https://github.com/MeanderingProgrammer/render-markdown.nvim",
 })

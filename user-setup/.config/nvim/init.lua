@@ -137,6 +137,12 @@ require("mini.diff").setup({
 
 require("mini.git").setup({})
 
+-- render-markdown
+require("render-markdown").setup({})
+vim.keymap.set("n", "<leader>tm", function()
+  require("render-markdown").toggle()
+end, { desc = "Toggle markdown rendering" })
+
 -- mini.diff keymaps
 local MiniDiff = require("mini.diff")
 vim.keymap.set("n", "]h", function()
