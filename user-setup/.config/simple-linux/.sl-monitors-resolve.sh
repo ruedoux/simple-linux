@@ -15,16 +15,7 @@ monitors_resolve() {
 
   # Load config (non-fatal if either file is missing): managed defaults first,
   # then user overrides.
-  set -a
-  if [ -f "$SL_ROOT_DIR/config.default.env" ]; then
-    # shellcheck disable=SC1091
-    source "$SL_ROOT_DIR/config.default.env"
-  fi
-  if [ -f "$SL_ROOT_DIR/config.env" ]; then
-    # shellcheck disable=SC1091
-    source "$SL_ROOT_DIR/config.env"
-  fi
-  set +a
+  load_config
 
   # --- Parse monitor order from config (format: NAME[:SCALE][:DIRECTION]) ---
   local -a monitor_order=()

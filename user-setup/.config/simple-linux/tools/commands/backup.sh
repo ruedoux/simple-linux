@@ -224,44 +224,6 @@ backup() {
   unset RESTIC_PASSWORD
 }
 
-backup_entry() {
-  local config_file_path=""
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -c|--config)
-        config_file_path="$2"
-        shift 2
-        ;;
-      -n|--dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-      -h|--help)
-        echo "Usage: $SCRIPT_NAME backup --config <file>"
-        echo ""
-        echo "  --config, -c <file>  JSON config file with repo-root, repo-name, includes, excludes, key"
-        echo "  --dry-run, -n        Simulate without making changes"
-        return 0
-        ;;
-      -*)
-        echo "Unknown option: $1"
-        return 1
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-
-  if [[ -z "$config_file_path" ]]; then
-      echo "Usage: $SCRIPT_NAME backup --config <file>"
-      return 1
-  fi
-
-  backup "$config_file_path"
-}
-
 remote_backup() {
   local config_file_path="$1"
 
@@ -303,45 +265,6 @@ remote_backup() {
 
   info "Running backup on server '$server_name'"
   ssh "$server_name" "${escaped_script_path} --config ${escaped_config_path}; rc=\$?; rm -f ${escaped_script_path} ${escaped_config_path}; exit \$rc"
-}
-
-remote_backup_entry() {
-  local config_file_path=""
-
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -c|--config)
-        config_file_path="$2"
-        shift 2
-        ;;
-      -n|--dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-      -h|--help)
-        echo "Usage: $SCRIPT_NAME remote-backup --config <file>"
-        echo ""
-        echo "  --config, -c <file>  JSON config file with repo-root, repo-name, includes, excludes, key, server"
-        echo "  --dry-run, -n        Simulate without making changes"
-        return 0
-        ;;
-      -*)
-        echo "Unknown option: $1"
-        return 1
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-
-  if [[ -z "$config_file_path" ]]; then
-      echo "Usage: $SCRIPT_NAME remote-backup --config <file>"
-      return 1
-  fi
-
-  require_rsync || exit 1
-  remote_backup "$config_file_path"
 }
 
 sync_backup_internal() {
@@ -397,27 +320,15 @@ sync_backup_internal() {
   fi
 }
 
-push_backup() {
-  sync_backup_internal "push" "$1" "$2" "$3"
-}
-
-push_backup_entry() {
-  local local_config_file_path=""
-  local destination_config_file_path=""
-  local repo_name=""
+parse_backup_args() {
+  local mode="$1"
+  shift
+  CONFIG_FILE=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -lc|--local-config)
-        local_config_file_path="$2"
-        shift 2
-        ;;
-      -dc|--destination-config)
-        destination_config_file_path="$2"
-        shift 2
-        ;;
-      -r|--repo)
-        repo_name="$2"
+      -c|--config)
+        CONFIG_FILE="$2"
         shift 2
         ;;
       -n|--dry-run)
@@ -425,17 +336,15 @@ push_backup_entry() {
         shift
         ;;
       -h|--help)
-        echo "Usage: $SCRIPT_NAME push-backup --local-config <file> --destination-config <file> --repo <name>"
+        echo "Usage: $SCRIPT_NAME $mode --config <file>"
         echo ""
-        echo "  --local-config, -lc <file>         Local config file"
-        echo "  --destination-config, -dc <file>   Destination config file"
-        echo "  --repo, -r <name>                  Repository name"
-        echo "  --dry-run, -n                      Simulate without making changes"
-        return 0
+        echo "  --config, -c <file>  JSON config file"
+        echo "  --dry-run, -n        Simulate without making changes"
+        exit 0
         ;;
       -*)
         echo "Unknown option: $1"
-        return 1
+        exit 1
         ;;
       *)
         break
@@ -443,36 +352,31 @@ push_backup_entry() {
     esac
   done
 
-  if [[ -z "$local_config_file_path" || -z "$destination_config_file_path" || -z "$repo_name" ]]; then
-      echo "Usage: $SCRIPT_NAME push-backup --local-config <file> --destination-config <file> --repo <name>"
-      return 1
+  if [[ -z "$CONFIG_FILE" ]]; then
+    echo "Usage: $SCRIPT_NAME $mode --config <file>"
+    exit 1
   fi
-
-  require_rsync || exit 1
-  push_backup "$local_config_file_path" "$destination_config_file_path" "$repo_name"
 }
 
-pull_backup() {
-  sync_backup_internal "pull" "$1" "$2" "$3"
-}
-
-pull_backup_entry() {
-  local local_config_file_path=""
-  local destination_config_file_path=""
-  local repo_name=""
+parse_sync_args() {
+  local mode="$1"
+  shift
+  LOCAL_CONFIG=""
+  DEST_CONFIG=""
+  REPO_NAME=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -lc|--local-config)
-        local_config_file_path="$2"
+        LOCAL_CONFIG="$2"
         shift 2
         ;;
       -dc|--destination-config)
-        destination_config_file_path="$2"
+        DEST_CONFIG="$2"
         shift 2
         ;;
       -r|--repo)
-        repo_name="$2"
+        REPO_NAME="$2"
         shift 2
         ;;
       -n|--dry-run)
@@ -480,17 +384,17 @@ pull_backup_entry() {
         shift
         ;;
       -h|--help)
-        echo "Usage: $SCRIPT_NAME pull-backup --local-config <file> --destination-config <file> --repo <name>"
+        echo "Usage: $SCRIPT_NAME $mode --local-config <file> --destination-config <file> --repo <name>"
         echo ""
         echo "  --local-config, -lc <file>         Local config file"
         echo "  --destination-config, -dc <file>   Destination config file"
         echo "  --repo, -r <name>                  Repository name"
         echo "  --dry-run, -n                      Simulate without making changes"
-        return 0
+        exit 0
         ;;
       -*)
         echo "Unknown option: $1"
-        return 1
+        exit 1
         ;;
       *)
         break
@@ -498,47 +402,42 @@ pull_backup_entry() {
     esac
   done
 
-  if [[ -z "$local_config_file_path" || -z "$destination_config_file_path" || -z "$repo_name" ]]; then
-      echo "Usage: $SCRIPT_NAME pull-backup --local-config <file> --destination-config <file> --repo <name>"
-      return 1
+  if [[ -z "$LOCAL_CONFIG" || -z "$DEST_CONFIG" || -z "$REPO_NAME" ]]; then
+    echo "Usage: $SCRIPT_NAME $mode --local-config <file> --destination-config <file> --repo <name>"
+    exit 1
   fi
-
-  require_rsync || exit 1
-  pull_backup "$local_config_file_path" "$destination_config_file_path" "$repo_name"
 }
 
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --remote)
-            shift
-            remote_backup_entry "$@"
-            exit $?
-            ;;
-        --push)
-            shift
-            push_backup_entry "$@"
-            exit $?
-            ;;
-        --pull)
-            shift
-            pull_backup_entry "$@"
-            exit $?
-            ;;
-        -h|--help)
-            echo "Usage: $SCRIPT_NAME [--remote|--push|--pull] [args...]"
-            echo ""
-            echo "  (no flag)       Local backup:   --config <file>"
-            echo "  --remote        Remote backup:   --config <file>"
-            echo "  --push          Push repo:       --local-config <f> --destination-config <f> --repo <name>"
-            echo "  --pull          Pull repo:       --local-config <f> --destination-config <f> --repo <name>"
-            echo "  --dry-run, -n                    Simulate without making changes"
-            exit 0
-            ;;
-        *)
-            break
-            ;;
-    esac
-done
+main() {
+  case "${1:-}" in
+    --remote)
+      shift
+      parse_backup_args "remote-backup" "$@"
+      require_rsync || exit 1
+      remote_backup "$CONFIG_FILE"
+      ;;
+    --push|--pull)
+      local mode="${1#--}"
+      shift
+      parse_sync_args "${mode}-backup" "$@"
+      require_rsync || exit 1
+      sync_backup_internal "$mode" "$LOCAL_CONFIG" "$DEST_CONFIG" "$REPO_NAME"
+      ;;
+    -h|--help)
+      echo "Usage: $SCRIPT_NAME [--remote|--push|--pull] [args...]"
+      echo ""
+      echo "  (no flag)       Local backup:   --config <file>"
+      echo "  --remote        Remote backup:   --config <file>"
+      echo "  --push          Push repo:       --local-config <f> --destination-config <f> --repo <name>"
+      echo "  --pull          Pull repo:       --local-config <f> --destination-config <f> --repo <name>"
+      echo "  --dry-run, -n                    Simulate without making changes"
+      exit 0
+      ;;
+    *)
+      parse_backup_args "backup" "$@"
+      backup "$CONFIG_FILE"
+      ;;
+  esac
+}
 
-# Default: local backup
-backup_entry "$@"
+main "$@"

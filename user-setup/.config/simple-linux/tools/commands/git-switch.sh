@@ -3,7 +3,7 @@ set -euo pipefail
 
 # shellcheck disable=SC2034
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-. "${TOOLSET_SCRIPT_DIR}/global.sh"
+. "$(dirname "${TOOLSET_SCRIPT_DIR}")/.sl-lib.sh"
 
 # Override to stderr since stdout is captured by eval
 info()  { echo -e "${BLUE}[INFO]${RESET} $*" >&2; }

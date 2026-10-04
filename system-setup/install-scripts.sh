@@ -15,14 +15,20 @@ if [ ! -f "$SETTINGS_DIR/settings.env" ]; then
   install -D -m 644 "$SCRIPT_ROOT/settings.env" "$SETTINGS_DIR/settings.env"
 fi
 
-install -D -m 644 "$SCRIPT_ROOT/.lib.sh" "$SETTINGS_DIR/lib.sh"
-install -D -m 755 "$SCRIPT_ROOT/scripts/sl-system-sync.sh" "$DESTDIR/usr/local/bin/sl-system-sync"
-install -D -m 755 "$SCRIPT_ROOT/scripts/sl-system-health.sh" "$DESTDIR/usr/local/bin/sl-system-health"
-install -D -m 755 "$SCRIPT_ROOT/scripts/sl-smartd-alert" "$DESTDIR/usr/local/bin/sl-smartd-alert"
-install -D -m 755 "$SCRIPT_ROOT/scripts/sl-remind" "$DESTDIR/usr/local/bin/sl-remind"
-install -D -m 644 "$SCRIPT_ROOT/systemd/sl-remind@.service" "$DESTDIR/usr/lib/systemd/system/sl-remind@.service"
-install -D -m 644 "$SCRIPT_ROOT/systemd/sl-remind-update.timer" "$DESTDIR/usr/lib/systemd/system/sl-remind-update.timer"
-install -D -m 644 "$SCRIPT_ROOT/systemd/sl-remind-btrfs.timer" "$DESTDIR/usr/lib/systemd/system/sl-remind-btrfs.timer"
+# Declarative manifest: mode|source (relative to repo) |destination (relative to $DESTDIR)
+while IFS='|' read -r mode src dest; do
+  [ -n "$mode" ] || continue
+  install -D -m "$mode" "$SCRIPT_ROOT/$src" "$DESTDIR/$dest"
+done <<'EOF'
+644|.lib.sh|etc/simple-linux/lib.sh
+755|scripts/sl-system-sync.sh|usr/local/bin/sl-system-sync
+755|scripts/sl-system-health.sh|usr/local/bin/sl-system-health
+755|scripts/sl-remind|usr/local/bin/sl-remind
+644|systemd/sl-remind@.service|usr/lib/systemd/system/sl-remind@.service
+644|systemd/sl-remind-update.timer|usr/lib/systemd/system/sl-remind-update.timer
+644|systemd/sl-remind-btrfs.timer|usr/lib/systemd/system/sl-remind-btrfs.timer
+EOF
+
 install -d -m 0755 "$DESTDIR/var/lib/simple-linux/alerts"
 
 if [ -z "$DESTDIR" ]; then

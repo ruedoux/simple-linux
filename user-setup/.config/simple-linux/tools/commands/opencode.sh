@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-. "${TOOLSET_SCRIPT_DIR}/global.sh"
+. "$(dirname "${TOOLSET_SCRIPT_DIR}")/.sl-lib.sh"
+load_config
 
 DEFAULT_DOCKER_PATH="${SL_CONTAINERS_DIR:-}"
 OPENCODE_VERSION="${SL_OPENCODE_VERSION}"

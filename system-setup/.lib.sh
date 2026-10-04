@@ -50,37 +50,6 @@ pause_before_reboot() {
   reboot
 }
 
-parse_kernels() {
-  IFS=' ' read -ra KERNEL_LIST <<< "$KERNELS"
-  IFS='|' read -ra LABEL_LIST  <<< "$EFI_LABELS"
-
-  # Filter out empty elements from IFS splits (caused by trailing/double spaces)
-  local filtered_kernels=()
-  for k in "${KERNEL_LIST[@]}"; do
-    [[ -n "$k" ]] && filtered_kernels+=("$k")
-  done
-  KERNEL_LIST=("${filtered_kernels[@]}")
-
-  local filtered_labels=()
-  for l in "${LABEL_LIST[@]}"; do
-    [[ -n "$l" ]] && filtered_labels+=("$l")
-  done
-  LABEL_LIST=("${filtered_labels[@]}")
-
-  if [[ ${#KERNEL_LIST[@]} -eq 0 ]]; then
-    log_err "KERNELS is empty (or contained only whitespace)."
-    exit 1
-  fi
-  if [[ ${#LABEL_LIST[@]} -eq 0 ]]; then
-    log_err "EFI_LABELS is empty (or contained only delimiters)."
-    exit 1
-  fi
-  if [[ ${#KERNEL_LIST[@]} -ne ${#LABEL_LIST[@]} ]]; then
-    log_err "KERNELS count (${#KERNEL_LIST[@]}) does not match EFI_LABELS count (${#LABEL_LIST[@]})"
-    exit 1
-  fi
-}
-
 verify_checked() {
   if [ "$CHECKED" != "true" ]; then
     log_err "Variable 'CHECKED' was not set to 'true' in 'settings.env' file"

@@ -155,9 +155,8 @@ setup_kernel_settings() {
 rd.luks.name=${luks_uuid}=cryptroot root=/dev/mapper/cryptroot rootflags=subvol=/@ rw quiet
 EOF
 
-  parse_kernels
-  for i in "${!KERNEL_LIST[@]}"; do
-    KERNEL="${KERNEL_LIST[$i]}"
+  for i in "${!KERNELS[@]}"; do
+    KERNEL="${KERNELS[$i]}"
     cat > "/mnt/etc/mkinitcpio.d/${KERNEL}.preset" <<EOF
 ALL_kver="/boot/vmlinuz-${KERNEL}"
 PRESETS=('default')

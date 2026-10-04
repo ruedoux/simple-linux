@@ -54,16 +54,16 @@ create_admin_user() {
 setup_uki() {
   mkdir -p /boot/EFI/Linux
 
-  for kernel in "${KERNEL_LIST[@]}"; do
+  for kernel in "${KERNELS[@]}"; do
     mkinitcpio -p "$kernel"
   done
 }
 
 setup_efi_boot_entries() {
   PART_NUM=$(lsblk -no PARTN "$EFI_PART")
-  for i in "${!KERNEL_LIST[@]}"; do
-    KERNEL="${KERNEL_LIST[$i]}"
-    LABEL="${LABEL_LIST[$i]}"
+  for i in "${!KERNELS[@]}"; do
+    KERNEL="${KERNELS[$i]}"
+    LABEL="${EFI_LABELS[$i]}"
     LOADER="/EFI/Linux/arch-${KERNEL}.efi"
 
     # Remove any existing boot entry with the same label (stale or prior install).
@@ -88,7 +88,6 @@ main() {
   run_step setup_locale "setting up locale"
   run_step enable_network_services "enabling network services"
   run_step create_admin_user "creating admin user"
-  parse_kernels
   run_step setup_uki "setting up UKI"
   run_step seed_esp_random "seeding random seed on ESP"
   run_step setup_efi_boot_entries "setting up efi boot entries"

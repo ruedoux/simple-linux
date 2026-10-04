@@ -13,7 +13,7 @@ export SL_CONFIG_PATH="$SL_ROOT_DIR/config.env"
 export WALLPAPER_DEST_PATH="$SL_ROOT_DIR/files/wallpaper.png"
 export SL_LOG_FILE="${SL_LOG_FILE:-$SL_ROOT_DIR/sl-controller.log}"
 source "$SL_ROOT_DIR/.sl-lib.sh"
-set -a; source "$SL_CONFIG_DEFAULT_PATH"; source "$SL_CONFIG_PATH"; set +a;
+load_config
 
 # If not running in a terminal (e.g. via nohup or triggered by another process),
 # redirect all output to log file to prevent nohup.out pollution

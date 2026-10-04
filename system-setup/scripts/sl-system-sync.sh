@@ -155,25 +155,23 @@ detect_and_install_gpu_drivers() {
   fi
 }
 
-# shellcheck disable=SC2086
-install_hyprland() { sudo pacman -S $PACMAN_CONFIRM --needed $HYPRLAND_PACKAGES; }
-# shellcheck disable=SC2086
-install_packages() { sudo pacman -S $PACMAN_CONFIRM --needed $OTHER_PACKAGES; }
-
-install_additional_packages() {
-  if [[ -z "${ADDITIONAL_PACKAGES:-}" ]]; then
-    return 0
-  fi
+install_pkg_list() {
+  local var_name="$1"
+  local pkgs="${!var_name:-}"
+  [[ -z "$pkgs" ]] && return 0
   # shellcheck disable=SC2086
-  sudo pacman -S $PACMAN_CONFIRM --needed $ADDITIONAL_PACKAGES
+  sudo pacman -S $PACMAN_CONFIRM --needed $pkgs
 }
+
+install_hyprland() { install_pkg_list HYPRLAND_PACKAGES; }
+install_packages() { install_pkg_list OTHER_PACKAGES; }
+install_additional_packages() { install_pkg_list ADDITIONAL_PACKAGES; }
 
 install_gaming_packages() {
   if [[ "$ENABLE_GAMING" != "true" ]]; then
     return 0
   fi
-  # shellcheck disable=SC2086
-  sudo pacman -S $PACMAN_CONFIRM --needed $GAMING_PACKAGES
+  install_pkg_list GAMING_PACKAGES
   # shellcheck disable=SC2086
   sudo systemctl enable --now $GAMING_SERVICES
 
@@ -203,11 +201,8 @@ STEAM_HOOK
 }
 
 install_dev_extras() {
-  if [[ "$ENABLE_DEV_EXTRAS" != "true" ]]; then
-    return 0
-  fi
-  # shellcheck disable=SC2086
-  sudo pacman -S $PACMAN_CONFIRM --needed $DEV_EXTRA_PACKAGES
+  [[ "$ENABLE_DEV_EXTRAS" != "true" ]] && return 0
+  install_pkg_list DEV_EXTRA_PACKAGES
 }
 
 create_desktop_users() {
@@ -229,14 +224,9 @@ create_desktop_users() {
         log_warn "User created but password must be set manually with: sudo passwd ${username}"
       fi
     fi
-  done
 
-  # Ensure all users have their configured groups (handles re-runs where
-  # DESKTOP_USERS entries gained new groups since initial install)
-  for entry in "${DESKTOP_USERS[@]}"; do
-    username="${entry%%:*}"
-    groups="${entry#*:}"
-    # Validate groups exist before adding — warn on invalid, don't silently skip
+    # Ensure the user has all configured groups (handles re-runs where
+    # DESKTOP_USERS entries gained new groups since initial install)
     local valid_groups=()
     for grp in ${groups//,/ }; do
       if getent group "$grp" &>/dev/null; then
@@ -274,7 +264,7 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-smartd-alert"
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind smartd"
 
   if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
@@ -314,6 +304,13 @@ setup_keys() {
   sudo sbctl enroll-keys -m
 }
 
+unsigned_images() {
+  local verify_output
+  verify_output=$(sudo sbctl verify 2>&1 || true)
+  # vmlinuz files are bundled inside UKIs and don't need separate signing
+  echo "$verify_output" | grep "not signed" | grep -v "vmlinuz" || true
+}
+
 sign_all_images() {
   # Register each UKI with sbctl explicitly — sbctl sign-all does not detect UKIs
   shopt -s nullglob
@@ -333,11 +330,8 @@ sign_all_images() {
   sudo sbctl sign-all
 
   # Verify — fatal if anything is still unsigned
-  # vmlinuz files are bundled inside UKIs and don't need separate signing
-  local verify_output
-  verify_output=$(sudo sbctl verify 2>&1 || true)
   local unsigned
-  unsigned=$(echo "$verify_output" | grep "not signed" | grep -v "vmlinuz" || true)
+  unsigned=$(unsigned_images)
   if [[ -n "$unsigned" ]]; then
     log_err "Some EFI images are still unsigned:"
     echo "$unsigned" | while read -r line; do
@@ -349,11 +343,7 @@ sign_all_images() {
 }
 
 secure_boot_images_signed() {
-  local verify_output
-  verify_output=$(sudo sbctl verify 2>&1 || true)
-  local unsigned
-  unsigned=$(echo "$verify_output" | grep "not signed" | grep -v "vmlinuz" || true)
-  [[ -z "$unsigned" ]]
+  [[ -z "$(unsigned_images)" ]]
 }
 
 secure_boot_check() {
@@ -382,11 +372,9 @@ secure_boot_check() {
   fi
 
   # Not configurable — warn but don't block the rest of setup
-  local verify_output
-  verify_output=$(sudo sbctl verify 2>&1 || true)
   log_warn "Secure Boot: cannot configure (Setup Mode disabled, configuration incomplete)."
   log_warn "Enter Setup Mode in UEFI firmware and re-run, or configure manually."
-  if echo "$verify_output" | grep -q "not signed"; then
+  if [[ -n "$(unsigned_images)" ]]; then
     log_warn "Unsigned images detected — the system may not boot with Secure Boot enabled."
   fi
 }
