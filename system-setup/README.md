@@ -14,7 +14,7 @@ A fully automated Arch Linux install and configuration system. Takes a bare meta
 | **Snapshots** | `timeshift` installed for Btrfs snapshots (manual configuration required) |
 | **Firewall** | `nftables` (default-deny inbound, allow established/loopback/DHCP) |
 | **S.M.A.R.T.** | `smartd` enabled with disk-failure alerts written to `/var/lib/simple-linux/alerts` (world-readable) |
-| **Notifications** | Persistent reminders via `sl-remind` — weekly "update" and monthly "btrfs" timers write `.alert` files, surfaced as desktop notifications on every login until an admin removes the file |
+| **Notifications** | Persistent reminders via `sl-remind-notifications` — weekly "update" and monthly "btrfs" reminders are derived from timestamp stamps and surfaced as desktop notifications on every login until reset (`sl-system-sync` resets "update", `sl-remind-notifications reset btrfs` resets "btrfs") |
 | **Desktop** | Hyprland, PipeWire audio, Bluetooth |
 
 ## Prerequisites
@@ -87,7 +87,7 @@ the pull and continues applying your current configuration. `--check` only
 compares the local clone against the remote and exits non-zero when an update is
 available, so it can be used from cron.
 
-At login, Quickshell runs `sl-remind check-update`, a read-only check that
+At login, Quickshell runs `sl-remind-notifications check-update`, a read-only check that
 notifies you when a new version is available in `/opt/simple-linux`.
 
 #### Overrides (`settings.env`)

@@ -135,12 +135,15 @@ Services without the label are started without waiting.
 ### Notifications
 
 Notifications are managed at the system level (see `system-setup`). `smartd`
-and the `sl-remind` timers write world-readable `.alert` files to
-`/var/lib/simple-linux/alerts`. On every login, Quickshell runs
-`sl-remind notify`, which turns each `.alert` file into a desktop notification.
-Notifications persist until an admin removes the corresponding file.
+writes world-readable `.alert` files to `/var/lib/simple-linux/alerts`, and
+`sl-remind-notifications` derives weekly "update" and monthly "btrfs" reminders
+from timestamp stamps. On every login, Quickshell runs
+`sl-remind-notifications notify`, which turns smartd alerts and any due reminder
+into a desktop notification. Reminders repeat on every login until reset —
+`sl-system-sync` resets "update", and `sl-remind-notifications reset btrfs`
+resets "btrfs" after a scrub.
 
-Quickshell also runs `sl-remind check-update` on startup — a read-only git check
+Quickshell also runs `sl-remind-notifications check-update` on startup — a read-only git check
 of `/opt/simple-linux` that sends a desktop notification when a new version is
 available, prompting you to run `sudo sl-system-sync`.
 

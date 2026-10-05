@@ -15,8 +15,8 @@ ShellRoot {
     running: true
     repeat: false
     onTriggered: {
-      EventBus.runDetached(["/usr/local/bin/sl-remind", "notify"], Settings.logPath)
-      EventBus.runDetached(["/usr/local/bin/sl-remind", "check-update"], Settings.logPath)
+      EventBus.runDetached(["/usr/local/bin/sl-remind-notifications", "notify"], Settings.logPath)
+      EventBus.runDetached(["/usr/local/bin/sl-remind-notifications", "check-update"], Settings.logPath)
     }
   }
 

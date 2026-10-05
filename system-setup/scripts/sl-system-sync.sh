@@ -257,6 +257,18 @@ enable_system_services() {
   sudo systemctl enable --now $SYSTEMD_SYSTEM_SERVICES
 }
 
+mask_tpm_nvpcr_services() {
+  # Workaround for upstream systemd bug #43848: systemd 262 now requires NvPCR
+  # definitions + a signed PCR policy to be embedded in the UKI (ukify
+  # --sign-initrd-pcrs). UKIs are built with mkinitcpio, so these units fail
+  # on every boot ("Failed to initialize NvPCR index: No such file or directory").
+  # Project doesn't use NvPCR measurement — mask the units until fixed upstream.
+  sudo systemctl mask systemd-tpm2-setup-early.service systemd-pcrproduct.service systemd-pcrlogin@.service
+  sudo systemctl reset-failed systemd-tpm2-setup-early.service \
+    systemd-pcrproduct.service \
+    systemd-pcrlogin@.service 2>/dev/null || true
+}
+
 setup_smartd() {
   if ! command -v smartd &>/dev/null; then
     log_warn "smartd not installed, skipping S.M.A.R.T. monitoring configuration"
@@ -264,7 +276,7 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind smartd"
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications smartd"
 
   if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
@@ -280,10 +292,18 @@ SMARTD_CONF
   log_ok "smartd service enabled"
 }
 
-setup_reminders() {
-  sudo systemctl daemon-reload
-  sudo systemctl enable --now sl-remind-update.timer sl-remind-btrfs.timer
-  log_ok "notification reminder timers enabled"
+reset_reminder_stamps() {
+  local alerts_dir="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
+
+  # The update was just applied — silence the "system update" reminder.
+  /usr/local/bin/sl-remind-notifications reset update
+
+  # Seed the btrfs stamp on first run so the monthly scrub countdown starts.
+  if [ ! -f "$alerts_dir/btrfs.stamp" ]; then
+    /usr/local/bin/sl-remind-notifications reset btrfs
+  fi
+
+  log_ok "reminder stamps updated"
 }
 
 configure_wireless_regdom() {
@@ -487,9 +507,10 @@ main() {
   run_step install_dev_extras "installing development extras"
   run_step install_additional_packages "installing additional packages"
   run_step enable_system_services "enabling system services"
+  run_step mask_tpm_nvpcr_services "masking TPM NvPCR services (upstream systemd#43848 workaround)"
   run_step setup_smartd "configuring S.M.A.R.T. monitoring (smartd)"
-  run_step setup_reminders "enabling notification reminder timers"
   run_step configure_wireless_regdom "configuring wireless regulatory domain"
+  run_step reset_reminder_stamps "resetting reminder stamps"
 
   # Secure Boot — 3-way check: skip/configure/warn
   secure_boot_check

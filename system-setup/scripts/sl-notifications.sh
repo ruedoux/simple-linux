@@ -3,13 +3,16 @@ set -euo pipefail
 
 # simple-linux persistent notification system.
 #
-#   sl-remind update|btrfs   create a persistent alert file (run by root timers)
-#   sl-remind check-update   read-only check for a new repo version; notify user
-#   sl-remind smartd         write a disk-failure alert (called by smartd -M exec)
-#   sl-remind notify         send every alert file as a desktop notification
+#   sl-remind-notifications notify         (user) display smartd alerts + due reminders as desktop notifications
+#   sl-remind-notifications reset <kind>   (root) write the current time to a reminder stamp, silencing it for another interval
+#   sl-remind-notifications check-update   read-only check for a new repo version; notify user
+#   sl-remind-notifications smartd         write a disk-failure alert (called by smartd -M exec)
 #
-# Alert files live in NOTIFY_ALERTS_DIR (world-readable). They persist until an
-# admin removes them, so the notification repeats on every login until resolved.
+# Reminders ("update" weekly, "btrfs" monthly) are driven by timestamp files
+# (${kind}.stamp) rather than systemd timers or persisted .alert files. `notify`
+# is read-only: it compares each stamp against the current time and shows the
+# reminder once its interval has elapsed. Only root writes stamps — via `reset`
+# or via `sl-system-sync` (which resets the "update" stamp after each update).
 
 if [ -f /etc/simple-linux/settings.default.env ]; then
   # shellcheck disable=SC1091
@@ -21,29 +24,32 @@ if [ -f /etc/simple-linux/settings.env ]; then
 fi
 
 ALERTS_DIR="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
+UPDATE_INTERVAL="${NOTIFY_UPDATE_INTERVAL:-604800}"
+BTRFS_INTERVAL="${NOTIFY_BTRFS_INTERVAL:-2592000}"
 
-create_alert() {
+remind_if_due() {
   local kind="$1"
-  local title="$2"
-  local body="$3"
-  local file="$ALERTS_DIR/${kind}.alert"
+  local interval="$2"
+  local title="$3"
+  local body="$4"
+  local stamp="$ALERTS_DIR/${kind}.stamp"
 
-  if [ -f "$file" ]; then
-    return 0
+  [ -f "$stamp" ] || return 0
+
+  local now last
+  now="$(date +%s)"
+  last="$(cat "$stamp")"
+
+  if [ $((now - last)) -ge "$interval" ]; then
+    notify-send -u normal "$title" "$body" 2>/dev/null || true
   fi
-
-  mkdir -p "$ALERTS_DIR"
-  chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
-
-  {
-    printf '%s\n' "$title"
-    printf '%s\n' "$body"
-  } > "$file"
-  chmod 0644 "$file" 2>/dev/null || true
 }
 
 notify() {
   command -v notify-send >/dev/null 2>&1 || return 0
+
+  remind_if_due "update" "$UPDATE_INTERVAL" "System update" "Update the system and run a backup."
+  remind_if_due "btrfs" "$BTRFS_INTERVAL" "Btrfs health check" "Run a btrfs scrub and health check."
 
   shopt -s nullglob
   local files=("$ALERTS_DIR"/*.alert)
@@ -64,6 +70,16 @@ notify() {
 
     notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
   done
+}
+
+reset_reminder() {
+  local kind="$1"
+  local stamp="$ALERTS_DIR/${kind}.stamp"
+
+  mkdir -p "$ALERTS_DIR"
+  chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
+  printf '%s\n' "$(date +%s)" > "$stamp"
+  chmod 0644 "$stamp" 2>/dev/null || true
 }
 
 smartd_alert() {
@@ -109,12 +125,6 @@ check_update() {
 }
 
 case "${1:-}" in
-  update)
-    create_alert "update" "System update" "Update the system and run a backup. Remove ${ALERTS_DIR}/update.alert when done."
-    ;;
-  btrfs)
-    create_alert "btrfs" "Btrfs health check" "Run a btrfs scrub and health check. Remove ${ALERTS_DIR}/btrfs.alert when done."
-    ;;
   check-update)
     check_update
     ;;
@@ -124,8 +134,19 @@ case "${1:-}" in
   notify)
     notify
     ;;
+  reset)
+    case "${2:-}" in
+      update|btrfs)
+        reset_reminder "$2"
+        ;;
+      *)
+        echo "Usage: sl-remind-notifications reset [update|btrfs]" >&2
+        exit 1
+        ;;
+    esac
+    ;;
   *)
-    echo "Usage: sl-remind [update|btrfs|check-update|smartd|notify]" >&2
+    echo "Usage: sl-remind-notifications [check-update|smartd|notify|reset <update|btrfs>]" >&2
     exit 1
     ;;
 esac
