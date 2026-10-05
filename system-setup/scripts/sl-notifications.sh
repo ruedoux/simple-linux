@@ -146,6 +146,13 @@ case "${1:-}" in
     esac
     ;;
   *)
+    # smartd's "-M exec" invokes this script with the warning message as $1 and
+    # the SMARTD_* environment populated, rather than an explicit subcommand.
+    # Detect that context and write the disk-failure alert.
+    if [ -n "${SMARTD_MESSAGE:-}" ]; then
+      smartd_alert
+      exit 0
+    fi
     echo "Usage: sl-remind-notifications [check-update|smartd|notify|reset <update|btrfs>]" >&2
     exit 1
     ;;

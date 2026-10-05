@@ -267,6 +267,25 @@ mask_tpm_nvpcr_services() {
   sudo systemctl reset-failed systemd-tpm2-setup-early.service \
     systemd-pcrproduct.service \
     systemd-pcrlogin@.service 2>/dev/null || true
+
+  # systemd-tpm2-setup-early.service runs inside the initrd (mkinitcpio bundles
+  # it into the UKI), so the /etc mask above doesn't reach it. Mask it in the
+  # initrd via the kernel cmdline instead, then rebuild + re-sign the UKI so the
+  # change is baked in.
+  local cmdline_file="/etc/cmdline.d/root.conf"
+  local mask_flag="rd.systemd.mask=systemd-tpm2-setup-early.service"
+  [ -f "$cmdline_file" ] || return 0
+  grep -qsF "$mask_flag" "$cmdline_file" && return 0
+
+  sudo sed -i "s|$| ${mask_flag}|" "$cmdline_file"
+  sudo mkinitcpio -P
+
+  # Re-sign the freshly rebuilt (now unsigned) UKI. Only possible once sbctl
+  # keys exist; on fresh installs the flag is already baked in by the installer,
+  # so this path only runs on existing systems with enrolled keys.
+  if [ -d /var/lib/sbctl/keys ]; then
+    sign_all_images
+  fi
 }
 
 setup_smartd() {
@@ -276,7 +295,10 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications smartd"
+  # smartd's "-M exec" runs the command with the warning message as $1 and the
+  # SMARTD_* env set; it accepts no extra arguments, so the script detects the
+  # smartd context via the env instead of a subcommand.
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications"
 
   if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
