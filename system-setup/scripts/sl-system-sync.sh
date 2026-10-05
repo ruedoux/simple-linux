@@ -300,7 +300,7 @@ setup_smartd() {
   # smartd context via the env instead of a subcommand.
   local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications"
 
-  if [ -f "$smartd_conf" ] && grep -qF "$exec_line" "$smartd_conf"; then
+  if [ -f "$smartd_conf" ] && grep -qxF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
   else
     sudo tee "$smartd_conf" > /dev/null <<SMARTD_CONF
