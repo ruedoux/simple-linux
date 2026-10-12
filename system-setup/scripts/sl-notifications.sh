@@ -7,6 +7,7 @@ set -euo pipefail
 #   sl-remind-notifications reset <kind>   (root) write the current time to a reminder stamp, silencing it for another interval
 #   sl-remind-notifications check-update   read-only check for a new repo version; notify user
 #   sl-remind-notifications smartd         write a disk-failure alert (called by smartd -M exec)
+#   sl-remind-notifications list            list reminders and when they will next fire
 #
 # Reminders ("update" weekly, "btrfs" monthly) are driven by timestamp files
 # (${kind}.stamp) rather than systemd timers or persisted .alert files. `notify`
@@ -45,11 +46,20 @@ remind_if_due() {
   fi
 }
 
+reminder_specs() {
+  # kind|interval-seconds|interval-label|title|body
+  printf '%s\n' \
+    "update|$UPDATE_INTERVAL|weekly|System update|Update the system and run a backup." \
+    "btrfs|$BTRFS_INTERVAL|monthly|Btrfs health check|Run a btrfs scrub and health check."
+}
+
 notify() {
   command -v notify-send >/dev/null 2>&1 || return 0
 
-  remind_if_due "update" "$UPDATE_INTERVAL" "System update" "Update the system and run a backup."
-  remind_if_due "btrfs" "$BTRFS_INTERVAL" "Btrfs health check" "Run a btrfs scrub and health check."
+  local kind interval title body
+  while IFS='|' read -r kind interval _ title body; do
+    remind_if_due "$kind" "$interval" "$title" "$body"
+  done < <(reminder_specs)
 
   shopt -s nullglob
   local files=("$ALERTS_DIR"/*.alert)
@@ -70,6 +80,37 @@ notify() {
 
     notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
   done
+}
+
+list_reminders() {
+  local now kind interval label stamp last next last_h next_h status
+  now="$(date +%s)"
+
+  printf '%-10s  %-10s  %-19s  %-19s  %s\n' \
+    "REMINDER" "INTERVAL" "LAST RESET" "NEXT DUE" "STATUS"
+
+  while IFS='|' read -r kind interval label _ _; do
+    stamp="$ALERTS_DIR/${kind}.stamp"
+
+    if [ -f "$stamp" ]; then
+      last="$(cat "$stamp")"
+      next=$((last + interval))
+      last_h="$(date -d "@$last" '+%Y-%m-%d %H:%M:%S')"
+      next_h="$(date -d "@$next" '+%Y-%m-%d %H:%M:%S')"
+      if [ "$now" -ge "$next" ]; then
+        status="due"
+      else
+        status="ok"
+      fi
+    else
+      last_h="-"
+      next_h="never"
+      status="n/a"
+    fi
+
+    printf '%-10s  %-10s  %-19s  %-19s  %s\n' \
+      "$kind" "$label" "$last_h" "$next_h" "$status"
+  done < <(reminder_specs)
 }
 
 reset_reminder() {
@@ -134,6 +175,9 @@ case "${1:-}" in
   notify)
     notify
     ;;
+  list)
+    list_reminders
+    ;;
   reset)
     case "${2:-}" in
       update|btrfs)
@@ -153,7 +197,7 @@ case "${1:-}" in
       smartd_alert
       exit 0
     fi
-    echo "Usage: sl-remind-notifications [check-update|smartd|notify|reset <update|btrfs>]" >&2
+    echo "Usage: sl-remind-notifications [check-update|smartd|notify|list|reset <update|btrfs>]" >&2
     exit 1
     ;;
 esac

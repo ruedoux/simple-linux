@@ -6,15 +6,12 @@ source /etc/simple-linux/lib.sh
 [ -f /etc/simple-linux/settings.env ] && source /etc/simple-linux/settings.env
 
 NO_UPDATE=0
-ACCEPT=0
 CHECK_ONLY=0
 REPO="${SYSTEM_WIDE_DEST:-/opt/simple-linux}"
-PACMAN_CONFIRM=""
 
 usage() {
-  echo "Usage: sl-system-sync [--accept] [--no-update] [--check]"
+  echo "Usage: sl-system-sync [--no-update] [--check]"
   echo ""
-  echo "  --accept, -y     Accept all prompts: auto git pull + pacman --noconfirm."
   echo "  --no-update, -n  Skip the full system upgrade (pacman -Syu)."
   echo "                   Configured packages are still installed (--needed)."
   echo "  --check, -c      Fetch and compare only; make no changes."
@@ -60,10 +57,8 @@ sync_simple_linux_repo() {
     return 0
   fi
 
-  if [ "$ACCEPT" -eq 1 ]; then
-    log_step "Pulling latest changes (--accept)"
-  elif [[ ! -t 0 ]]; then
-    log_warn "Not a TTY and --accept not given — skipping simple-linux update"
+  if [[ ! -t 0 ]]; then
+    log_warn "Not a TTY — skipping simple-linux update"
     return 0
   else
     log_step "New version available: $(local_commit) -> $(remote_commit)"
@@ -78,6 +73,9 @@ sync_simple_linux_repo() {
     esac
   fi
 
+  local old_commit
+  old_commit=$(local_commit)
+
   log_step "Pulling latest changes"
   if ! git -C "$REPO" pull --ff-only --quiet; then
     log_err "git pull --ff-only failed. The local repo may have modifications."
@@ -87,6 +85,16 @@ sync_simple_linux_repo() {
   log_ok "Repository updated to $(local_commit)"
 
   run_step "$REPO/system-setup/install-scripts.sh" "installing updated system files"
+
+  # The running process holds the pre-pull version of this script in memory. If the
+  # sync command itself changed, the remaining steps may be stale, so force a re-run
+  # on the freshly installed version instead of continuing.
+  if git -C "$REPO" diff --quiet "$old_commit" HEAD -- system-setup/scripts/sl-system-sync.sh; then
+    return 0
+  fi
+
+  log_warn "sl-system-sync was updated — re-run 'sudo sl-system-sync' to apply the remaining steps with the new version."
+  exit 0
 }
 
 sync_pacman() {
@@ -94,7 +102,7 @@ sync_pacman() {
     log_warn "Skipping full system upgrade (--no-update)"
     return 0
   fi
-  sudo pacman -Syu $PACMAN_CONFIRM
+  sudo pacman -Syu
 }
 
 enable_multilib() {
@@ -114,9 +122,9 @@ enable_multilib() {
     # Refresh-only: the new [multilib] DB is required for the --needed installs
     # that follow, but we skip the full upgrade per --no-update.
     log_warn "Refreshing package DB without upgrade (--no-update)"
-    sudo pacman -Sy $PACMAN_CONFIRM
+    sudo pacman -Sy
   else
-    sudo pacman -Syu $PACMAN_CONFIRM
+    sudo pacman -Syu
   fi
 }
 
@@ -148,10 +156,10 @@ detect_and_install_gpu_drivers() {
   if [[ -n "$drivers" ]]; then
     log_ok "Detected GPU(s), installing:${drivers}"
     # shellcheck disable=SC2086
-    sudo pacman -S $PACMAN_CONFIRM --needed $drivers
+    sudo pacman -S --needed $drivers
   else
     log_warn "No recognized GPU; installing mesa as fallback"
-    sudo pacman -S $PACMAN_CONFIRM --needed mesa
+    sudo pacman -S --needed mesa
   fi
 }
 
@@ -160,7 +168,7 @@ install_pkg_list() {
   local pkgs="${!var_name:-}"
   [[ -z "$pkgs" ]] && return 0
   # shellcheck disable=SC2086
-  sudo pacman -S $PACMAN_CONFIRM --needed $pkgs
+  sudo pacman -S --needed $pkgs
 }
 
 install_hyprland() { install_pkg_list HYPRLAND_PACKAGES; }
@@ -295,9 +303,6 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  # smartd's "-M exec" runs the command with the warning message as $1 and the
-  # SMARTD_* env set; it accepts no extra arguments, so the script detects the
-  # smartd context via the env instead of a subcommand.
   local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications"
 
   if [ -f "$smartd_conf" ] && grep -qxF "$exec_line" "$smartd_conf"; then
@@ -354,7 +359,6 @@ unsigned_images() {
 }
 
 sign_all_images() {
-  # Register each UKI with sbctl explicitly — sbctl sign-all does not detect UKIs
   shopt -s nullglob
   local uki_files=(/boot/EFI/Linux/*.efi)
   shopt -u nullglob
@@ -474,11 +478,6 @@ preflight_checks() {
 main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --accept|-y)
-        ACCEPT=1
-        PACMAN_CONFIRM="--noconfirm"
-        shift
-        ;;
       --no-update|-n)
         NO_UPDATE=1
         shift

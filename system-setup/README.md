@@ -14,7 +14,7 @@ A fully automated Arch Linux install and configuration system. Takes a bare meta
 | **Snapshots** | `timeshift` installed for Btrfs snapshots (manual configuration required) |
 | **Firewall** | `nftables` (default-deny inbound, allow established/loopback/DHCP) |
 | **S.M.A.R.T.** | `smartd` enabled with disk-failure alerts written to `/var/lib/simple-linux/alerts` (world-readable) |
-| **Notifications** | Persistent reminders via `sl-remind-notifications` — weekly "update" and monthly "btrfs" reminders are derived from timestamp stamps and surfaced as desktop notifications on every login until reset (`sl-system-sync` resets "update", `sl-remind-notifications reset btrfs` resets "btrfs") |
+| **Notifications** | Persistent reminders via `sl-remind-notifications` — weekly "update" and monthly "btrfs" reminders are derived from timestamp stamps and surfaced as desktop notifications on every login until reset (`sl-system-sync` resets "update", `sl-remind-notifications reset btrfs` resets "btrfs"). Run `sl-remind-notifications list` to see reminders and when they next fire. |
 | **Desktop** | Hyprland, PipeWire audio, Bluetooth |
 
 ## Prerequisites
@@ -78,7 +78,6 @@ commits and, if any are available, asks before pulling:
 ```bash
 sudo sl-system-sync             # checks for updates, prompts, then applies config
 sudo sl-system-sync --check     # only compare local repo to remote (no changes)
-sudo sl-system-sync --accept    # accept everything: auto pull + pacman --noconfirm
 sudo sl-system-sync --no-update # skips pacman -Syu
 ```
 

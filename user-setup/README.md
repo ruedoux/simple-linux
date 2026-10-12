@@ -141,7 +141,8 @@ from timestamp stamps. On every login, Quickshell runs
 `sl-remind-notifications notify`, which turns smartd alerts and any due reminder
 into a desktop notification. Reminders repeat on every login until reset —
 `sl-system-sync` resets "update", and `sl-remind-notifications reset btrfs`
-resets "btrfs" after a scrub.
+resets "btrfs" after a scrub. Run `sl-remind-notifications list` to see each
+reminder and when it will next fire.
 
 Quickshell also runs `sl-remind-notifications check-update` on startup — a read-only git check
 of `/opt/simple-linux` that sends a desktop notification when a new version is
