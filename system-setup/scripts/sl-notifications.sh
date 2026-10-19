@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# simple-linux persistent notification system.
+# sl-remind-notifications — persistent desktop notifications for simple-linux.
 #
-#   sl-remind-notifications notify         (user) display smartd alerts + due reminders as desktop notifications
-#   sl-remind-notifications reset <kind>   (root) write the current time to a reminder stamp, silencing it for another interval
-#   sl-remind-notifications check-update   read-only check for a new repo version; notify user
-#   sl-remind-notifications smartd         write a disk-failure alert (called by smartd -M exec)
-#   sl-remind-notifications list            list reminders and when they will next fire
+#   notify                                  (user) show due reminders + smartd alerts
+#   set <name> [seconds] [title] [body]     create/override a reminder and start its countdown
+#   set update|btrfs                        reset a built-in reminder's countdown
+#   remove <name>                           delete a reminder (built-ins revert to default)
+#   check-update                            (read-only) notify if a repo update is available
+#   list                                    show reminders and when they will next fire
 #
-# Reminders ("update" weekly, "btrfs" monthly) are driven by timestamp files
-# (${kind}.stamp) rather than systemd timers or persisted .alert files. `notify`
-# is read-only: it compares each stamp against the current time and shows the
-# reminder once its interval has elapsed. Only root writes stamps — via `reset`
-# or via `sl-system-sync` (which resets the "update" stamp after each update).
+# smartd's "-M exec" runs this script with no arguments (SMARTD_* env set),
+# which writes a disk-failure .alert file.
+#
+# Built-ins: weekly "update" and monthly "btrfs". User reminders are stored as
+# <name>.reminder (interval/title/body) plus <name>.stamp (last-set time) under
+# NOTIFY_ALERTS_DIR.
 
 if [ -f /etc/simple-linux/settings.default.env ]; then
   # shellcheck disable=SC1091
@@ -28,12 +30,27 @@ ALERTS_DIR="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 UPDATE_INTERVAL="${NOTIFY_UPDATE_INTERVAL:-604800}"
 BTRFS_INTERVAL="${NOTIFY_BTRFS_INTERVAL:-2592000}"
 
-remind_if_due() {
-  local kind="$1"
-  local interval="$2"
-  local title="$3"
-  local body="$4"
-  local stamp="$ALERTS_DIR/${kind}.stamp"
+have_notify_send() {
+  command -v notify-send >/dev/null 2>&1
+}
+
+send_notification() {
+  local urgency="$1" title="$2" body="$3"
+  notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
+}
+
+ensure_alerts_dir() {
+  mkdir -p "$ALERTS_DIR"
+  chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
+}
+
+valid_name() {
+  [ -n "$1" ] && [[ "$1" != */* ]]
+}
+
+remind() {
+  local name="$1" interval="$2" title="$3" body="$4"
+  local stamp="$ALERTS_DIR/${name}.stamp"
 
   [ -f "$stamp" ] || return 0
 
@@ -42,24 +59,38 @@ remind_if_due() {
   last="$(cat "$stamp")"
 
   if [ $((now - last)) -ge "$interval" ]; then
-    notify-send -u normal "$title" "$body" 2>/dev/null || true
+    send_notification normal "$title" "$body"
   fi
 }
 
-reminder_specs() {
-  # kind|interval-seconds|interval-label|title|body
-  printf '%s\n' \
-    "update|$UPDATE_INTERVAL|weekly|System update|Update the system and run a backup." \
-    "btrfs|$BTRFS_INTERVAL|monthly|Btrfs health check|Run a btrfs scrub and health check."
+remind_builtin() {
+  local name="$1" interval="$2" title="$3" body="$4"
+  [ -f "$ALERTS_DIR/${name}.reminder" ] && return 0
+  remind "$name" "$interval" "$title" "$body"
 }
 
 notify() {
-  command -v notify-send >/dev/null 2>&1 || return 0
+  have_notify_send || return 0
 
-  local kind interval title body
-  while IFS='|' read -r kind interval _ title body; do
-    remind_if_due "$kind" "$interval" "$title" "$body"
-  done < <(reminder_specs)
+  remind_builtin "update" "$UPDATE_INTERVAL" "System update" "Update the system and run a backup."
+  remind_builtin "btrfs" "$BTRFS_INTERVAL" "Btrfs health check" "Run a btrfs scrub and health check."
+
+  shopt -s nullglob
+  local defs=("$ALERTS_DIR"/*.reminder)
+  shopt -u nullglob
+
+  local f name interval title body
+  for f in "${defs[@]}"; do
+    [ -f "$f" ] || continue
+
+    name="$(basename "$f" .reminder)"
+    interval="$(head -n 1 "$f")"
+    title="$(sed -n '2p' "$f")"
+    body="$(tail -n +3 "$f")"
+    [ -n "$body" ] || body="$title"
+
+    remind "$name" "$interval" "$title" "$body"
+  done
 
   shopt -s nullglob
   local files=("$ALERTS_DIR"/*.alert)
@@ -78,49 +109,102 @@ notify() {
       *)          urgency="normal" ;;
     esac
 
-    notify-send -u "$urgency" "$title" "$body" 2>/dev/null || true
+    send_notification "$urgency" "$title" "$body"
   done
 }
 
-list_reminders() {
-  local now kind interval label stamp last next last_h next_h status
-  now="$(date +%s)"
+print_reminder_row() {
+  local name="$1" interval="$2" now="$3"
+  local stamp="$ALERTS_DIR/${name}.stamp"
+  local last next last_h next_h status
 
-  printf '%-10s  %-10s  %-19s  %-19s  %s\n' \
-    "REMINDER" "INTERVAL" "LAST RESET" "NEXT DUE" "STATUS"
-
-  while IFS='|' read -r kind interval label _ _; do
-    stamp="$ALERTS_DIR/${kind}.stamp"
-
-    if [ -f "$stamp" ]; then
-      last="$(cat "$stamp")"
-      next=$((last + interval))
-      last_h="$(date -d "@$last" '+%Y-%m-%d %H:%M:%S')"
-      next_h="$(date -d "@$next" '+%Y-%m-%d %H:%M:%S')"
-      if [ "$now" -ge "$next" ]; then
-        status="due"
-      else
-        status="ok"
-      fi
+  if [ -f "$stamp" ]; then
+    last="$(cat "$stamp")"
+    next=$((last + interval))
+    last_h="$(date -d "@$last" '+%Y-%m-%d %H:%M:%S')"
+    next_h="$(date -d "@$next" '+%Y-%m-%d %H:%M:%S')"
+    if [ "$now" -ge "$next" ]; then
+      status="due"
     else
-      last_h="-"
-      next_h="never"
-      status="n/a"
+      status="ok"
     fi
+  else
+    last_h="-"
+    next_h="never"
+    status="n/a"
+  fi
 
-    printf '%-10s  %-10s  %-19s  %-19s  %s\n' \
-      "$kind" "$label" "$last_h" "$next_h" "$status"
-  done < <(reminder_specs)
+  printf '%-12s  %-10s  %-19s  %-19s  %s\n' \
+    "$name" "$interval" "$last_h" "$next_h" "$status"
 }
 
-reset_reminder() {
-  local kind="$1"
-  local stamp="$ALERTS_DIR/${kind}.stamp"
+list_reminders() {
+  local now
+  now="$(date +%s)"
 
-  mkdir -p "$ALERTS_DIR"
-  chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
+  printf '%-12s  %-10s  %-19s  %-19s  %s\n' \
+    "REMINDER" "INTERVAL" "LAST SET" "NEXT DUE" "STATUS"
+
+  [ -f "$ALERTS_DIR/update.reminder" ] || print_reminder_row "update" "$UPDATE_INTERVAL" "$now"
+  [ -f "$ALERTS_DIR/btrfs.reminder" ] || print_reminder_row "btrfs" "$BTRFS_INTERVAL" "$now"
+
+  shopt -s nullglob
+  local defs=("$ALERTS_DIR"/*.reminder)
+  shopt -u nullglob
+
+  local f name interval
+  for f in "${defs[@]}"; do
+    [ -f "$f" ] || continue
+
+    name="$(basename "$f" .reminder)"
+    interval="$(head -n 1 "$f")"
+    print_reminder_row "$name" "$interval" "$now"
+  done
+}
+
+set_reminder() {
+  local name="$1" interval="$2" title="$3" body="${4:-}"
+  local def stamp
+
+  valid_name "$name" || { echo "Usage: sl-remind-notifications set <name> [seconds] [title] [body]" >&2; exit 1; }
+
+  # `set <builtin>` with no definition args only resets the countdown stamp.
+  if [ -z "$interval" ] && [ -z "$title" ]; then
+    case "$name" in
+      update|btrfs) ;;
+      *) echo "Usage: sl-remind-notifications set <name> [seconds] [title] [body]" >&2; exit 1 ;;
+    esac
+    ensure_alerts_dir
+    stamp="$ALERTS_DIR/${name}.stamp"
+    printf '%s\n' "$(date +%s)" > "$stamp"
+    chmod 0644 "$stamp" 2>/dev/null || true
+    return 0
+  fi
+
+  [[ "$interval" =~ ^[0-9]+$ ]] || { echo "error: interval must be a positive number of seconds" >&2; exit 1; }
+  [ -n "$title" ] || { echo "Usage: sl-remind-notifications set <name> [seconds] [title] [body]" >&2; exit 1; }
+
+  ensure_alerts_dir
+  def="$ALERTS_DIR/${name}.reminder"
+  stamp="$ALERTS_DIR/${name}.stamp"
+
+  {
+    printf '%s\n' "$interval"
+    printf '%s\n' "$title"
+    printf '%s\n' "${body:-$title}"
+  } > "$def"
+  chmod 0644 "$def" 2>/dev/null || true
+
   printf '%s\n' "$(date +%s)" > "$stamp"
   chmod 0644 "$stamp" 2>/dev/null || true
+}
+
+remove_reminder() {
+  local name="$1"
+
+  valid_name "$name" || { echo "Usage: sl-remind-notifications remove <name>" >&2; exit 1; }
+
+  rm -f "$ALERTS_DIR/${name}.reminder" "$ALERTS_DIR/${name}.stamp"
 }
 
 smartd_alert() {
@@ -130,8 +214,7 @@ smartd_alert() {
   local timestamp
   timestamp="$(date +"%Y-%m-%d_%H-%M-%S-%3N")"
 
-  mkdir -p "$ALERTS_DIR"
-  chmod 0755 "$ALERTS_DIR" 2>/dev/null || true
+  ensure_alerts_dir
 
   local alert_file="$ALERTS_DIR/critical-${timestamp}.alert"
   {
@@ -144,7 +227,7 @@ smartd_alert() {
 }
 
 check_update() {
-  command -v notify-send >/dev/null 2>&1 || return 0
+  have_notify_send || return 0
 
   local repo="${SYSTEM_WIDE_DEST:-/opt/simple-linux}"
   [ -d "$repo/.git" ] || return 0
@@ -160,8 +243,8 @@ check_update() {
   [ -n "$remote_head" ] || return 0
 
   if [ "$local_head" != "$remote_head" ]; then
-    notify-send -u normal "simple-linux update available" \
-      "A new version is available — run 'sudo sl-system-sync' to update." 2>/dev/null || true
+    send_notification normal "simple-linux update available" \
+      "A new version is available — run 'sudo sl-system-sync' to update."
   fi
 }
 
@@ -169,35 +252,25 @@ case "${1:-}" in
   check-update)
     check_update
     ;;
-  smartd)
-    smartd_alert
-    ;;
   notify)
     notify
     ;;
   list)
     list_reminders
     ;;
-  reset)
-    case "${2:-}" in
-      update|btrfs)
-        reset_reminder "$2"
-        ;;
-      *)
-        echo "Usage: sl-remind-notifications reset [update|btrfs]" >&2
-        exit 1
-        ;;
-    esac
+  set)
+    set_reminder "${2:-}" "${3:-}" "${4:-}" "${5:-}"
+    ;;
+  remove)
+    remove_reminder "${2:-}"
     ;;
   *)
-    # smartd's "-M exec" invokes this script with the warning message as $1 and
-    # the SMARTD_* environment populated, rather than an explicit subcommand.
-    # Detect that context and write the disk-failure alert.
+    # smartd "-M exec" runs this script with no subcommand, SMARTD_* env set.
     if [ -n "${SMARTD_MESSAGE:-}" ]; then
       smartd_alert
       exit 0
     fi
-    echo "Usage: sl-remind-notifications [check-update|smartd|notify|list|reset <update|btrfs>]" >&2
+    echo "Usage: sl-remind-notifications [check-update|notify|list|set <name> [seconds] [title] [body]|remove <name>]" >&2
     exit 1
     ;;
 esac

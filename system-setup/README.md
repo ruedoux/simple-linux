@@ -14,7 +14,7 @@ A fully automated Arch Linux install and configuration system. Takes a bare meta
 | **Snapshots** | `timeshift` installed for Btrfs snapshots (manual configuration required) |
 | **Firewall** | `nftables` (default-deny inbound, allow established/loopback/DHCP) |
 | **S.M.A.R.T.** | `smartd` enabled with disk-failure alerts written to `/var/lib/simple-linux/alerts` (world-readable) |
-| **Notifications** | Persistent reminders via `sl-remind-notifications` — weekly "update" and monthly "btrfs" reminders are derived from timestamp stamps and surfaced as desktop notifications on every login until reset (`sl-system-sync` resets "update", `sl-remind-notifications reset btrfs` resets "btrfs"). Run `sl-remind-notifications list` to see reminders and when they next fire. |
+| **Notifications** | Persistent reminders via `sl-remind-notifications` — built-in weekly "update" and monthly "btrfs" reminders, plus custom reminders via `set <name> <seconds> <title> [body]`; `remove <name>` deletes and `list` shows them. Due reminders surface as desktop notifications on every login until re-set (`sl-system-sync` resets "update" after updating). |
 | **Desktop** | Hyprland, PipeWire audio, Bluetooth |
 
 ## Prerequisites

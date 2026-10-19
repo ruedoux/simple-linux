@@ -323,11 +323,11 @@ reset_reminder_stamps() {
   local alerts_dir="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
   # The update was just applied — silence the "system update" reminder.
-  /usr/local/bin/sl-remind-notifications reset update
+  /usr/local/bin/sl-remind-notifications set update
 
-  # Seed the btrfs stamp on first run so the monthly scrub countdown starts.
+  # Seed the btrfs reminder on first run so the monthly scrub countdown starts.
   if [ ! -f "$alerts_dir/btrfs.stamp" ]; then
-    /usr/local/bin/sl-remind-notifications reset btrfs
+    /usr/local/bin/sl-remind-notifications set btrfs
   fi
 
   log_ok "reminder stamps updated"

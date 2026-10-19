@@ -7,36 +7,53 @@ source "$SETUP_SCRIPT_DIR/.config/simple-linux/.sl-lib.sh"
 
 copy_dots() {
   local src="$SETUP_SCRIPT_DIR/.config"
+
+  # Paths preserved across re-runs, keyed by .config subdir and relative to it.
+  # Directories are merged (rsync, no --delete); files are installed once if
+  # missing. To protect something new, just add it to this map.
+  declare -A preserve=(
+    [simple-linux]="config.env bashrc-extension.sh packages/"
+    [hypr]="hyprland/user-overrides.lua"
+  )
+
   for subdir in "$src"/*/; do
     local name
     name="$(basename "$subdir")"
     local dest="$HOME/.config/$name"
     mkdir -p "$dest"
 
-    local preserve_args=()
+    local excludes=()
+    local keep=()
     if [ -d "$subdir/files" ]; then
-      preserve_args+=(--exclude=files/)
-    fi
-    if [ -f "$subdir/config.env" ]; then
-      preserve_args+=(--exclude=config.env)
-    fi
-    if [[ "$name" == "simple-linux" ]]; then
-      preserve_args+=(--exclude=bashrc-extension.sh)
-      preserve_args+=(--exclude=packages/)
+      excludes+=(--exclude=files/)
     fi
 
-    rsync -a --delete "${preserve_args[@]}" "$subdir" "$dest/"
-
-    if [ -d "$subdir/packages" ]; then
-      rsync -a "$subdir/packages/" "$dest/packages/"
+    local paths
+    local path
+    if [[ -n "${preserve[$name]:-}" ]]; then
+      read -r -a paths <<< "${preserve[$name]}"
+      for path in "${paths[@]}"; do
+        excludes+=(--exclude="$path")
+        keep+=("$path")
+      done
     fi
 
+    rsync -a --delete "${excludes[@]}" "$subdir" "$dest/"
+
+    for path in "${keep[@]}"; do
+      if [ -d "$subdir/$path" ]; then
+        rsync -a "$subdir/$path/" "$dest/$path/"
+      elif [ -f "$subdir/$path" ] && [ ! -f "$dest/$path" ]; then
+        mkdir -p "$(dirname "$dest/$path")"
+        cp "$subdir/$path" "$dest/$path"
+      fi
+    done
+
+    # files/ (wallpapers) must merge without overwriting the user's files.
     if [ -d "$subdir/files" ]; then
       rsync -a --ignore-existing "$subdir/files/" "$dest/files/"
     fi
-    if [ -f "$subdir/config.env" ] && [ ! -f "$dest/config.env" ]; then
-      cp "$subdir/config.env" "$dest/config.env"
-    fi
+
     log_ok "Synced .config/$name"
   done
 

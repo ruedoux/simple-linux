@@ -72,6 +72,7 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
     group = augroup,
     callback = function()
+      if vim.bo.buftype == "terminal" then return end
       vim.opt_local.statusline = table.concat({
         "  ", "%#StatusLineBold#", "%{v:lua.mode_icon()}",
         "%#StatusLine#", " \u{e0b1} %f %h%m%r",
@@ -88,6 +89,7 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "WinLeave", "BufLeave" }, {
     group = augroup,
     callback = function()
+      if vim.bo.buftype == "terminal" then return end
       vim.opt_local.statusline = "  %f %h%m%r \u{e0b1} %{v:lua.file_type()} %=  %l:%c   %P "
     end,
   })

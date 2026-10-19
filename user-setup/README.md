@@ -12,9 +12,9 @@ Run [setup.sh](setup.sh) to bootstrap a user environment:
 ./user-setup/setup.sh
 ```
 
-Copies dotfiles via rsync (preserving wallpapers, user `bashrc-extension.sh`, and any user-added packages in `packages/`), starts PipeWire and HyprSunset user services, configures Hyprland autostart via `.bash_profile`, creates `hyprland-session.target` for session management, then runs `sl-controller.sh reload-all`.
+Copies dotfiles via rsync (preserving wallpapers, user `bashrc-extension.sh`, Hyprland `user-overrides.lua`, and any user-added packages in `packages/`), starts PipeWire and HyprSunset user services, configures Hyprland autostart via `.bash_profile`, creates `hyprland-session.target` for session management, then runs `sl-controller.sh reload-all`.
 
-Safe to run multiple times, but overrides most dotfiles (excluding wallpapers, `bashrc-extension.sh`, and user-added `.pkg.sh` files).
+Safe to run multiple times, but overrides most dotfiles (excluding wallpapers, `bashrc-extension.sh`, Hyprland `user-overrides.lua`, and user-added `.pkg.sh` files).
 
 ---
 
@@ -135,14 +135,15 @@ Services without the label are started without waiting.
 ### Notifications
 
 Notifications are managed at the system level (see `system-setup`). `smartd`
-writes world-readable `.alert` files to `/var/lib/simple-linux/alerts`, and
-`sl-remind-notifications` derives weekly "update" and monthly "btrfs" reminders
-from timestamp stamps. On every login, Quickshell runs
-`sl-remind-notifications notify`, which turns smartd alerts and any due reminder
-into a desktop notification. Reminders repeat on every login until reset —
-`sl-system-sync` resets "update", and `sl-remind-notifications reset btrfs`
-resets "btrfs" after a scrub. Run `sl-remind-notifications list` to see each
-reminder and when it will next fire.
+writes world-readable `.alert` files to `/var/lib/simple-linux/alerts`.
+`sl-remind-notifications` ships built-in weekly "update" and monthly "btrfs"
+reminders, and custom reminders can be created with
+`sl-remind-notifications set <name> <seconds> <title> [body]`. On every login,
+Quickshell runs `sl-remind-notifications notify`, which turns smartd alerts and
+any due reminder into a desktop notification. Reminders repeat on every login
+until re-set (`sl-system-sync` resets "update" after updating), and custom
+reminders can be deleted with `sl-remind-notifications remove <name>`. Run
+`sl-remind-notifications list` to see each reminder and when it will next fire.
 
 Quickshell also runs `sl-remind-notifications check-update` on startup — a read-only git check
 of `/opt/simple-linux` that sends a desktop notification when a new version is

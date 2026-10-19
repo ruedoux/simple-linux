@@ -3,10 +3,10 @@ local workspace_count = tonumber(os.getenv("SL_WORKSPACE_COUNT"))
 
 hl.bind("SUPER + RETURN", hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + F", hl.dsp.exec_cmd("flatpak run app.zen_browser.zen"))
-hl.bind("SUPER + E", hl.dsp.exec_cmd(terminal.." -e yazi"))
+hl.bind("SUPER + E", hl.dsp.exec_cmd(terminal .. " -e yazi"))
 hl.bind("SUPER + R", hl.dsp.exec_cmd("qs ipc call menu toggle"))
 hl.bind("SUPER + W", hl.dsp.exec_cmd("qs ipc call wallpaper toggle"))
-hl.bind("SUPER + C", hl.dsp.exec_cmd(terminal.." -e nvim"))
+hl.bind("SUPER + C", hl.dsp.exec_cmd(terminal .. " -e nvim"))
 hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd('grim -g "$(slurp -d)" - | wl-copy'))
 
 hl.bind("SUPER + SHIFT + C", hl.dsp.window.close())
@@ -40,7 +40,7 @@ for i = 1, workspace_count do
 end
 
 -- Mouse
-hl.bind("ALT + mouse:272", hl.dsp.window.drag(), { mouse = true })    -- ALT + LMB: Move a window
-hl.bind("ALT + mouse:273", hl.dsp.window.resize(), { mouse = true })  -- ALT + RMB: Resize a window
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })   -- ALT + LMB: Move a window
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true }) -- ALT + RMB: Resize a window
 
 hl.bind("SUPER + SHIFT + X", hl.dsp.window.float({ action = "toggle" }))
