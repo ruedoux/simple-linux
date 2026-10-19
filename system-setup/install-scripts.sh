@@ -14,7 +14,7 @@ MANIFESTS=(
   "644|.lib.sh|etc/simple-linux/lib.sh"
   "755|scripts/sl-system-sync.sh|usr/local/bin/sl-system-sync"
   "755|scripts/sl-system-health.sh|usr/local/bin/sl-system-health"
-  "755|scripts/sl-notifications.sh|usr/local/bin/sl-remind-notifications"
+  "755|scripts/sl-notifications.sh|usr/local/bin/sl-notifications"
 )
 
 # Absolute install paths recorded for the next run's removal pass.

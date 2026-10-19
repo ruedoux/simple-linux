@@ -272,7 +272,7 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-remind-notifications"
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-notifications"
 
   if [ -f "$smartd_conf" ] && grep -qxF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
@@ -291,12 +291,14 @@ SMARTD_CONF
 reset_reminder_stamps() {
   local alerts_dir="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
-  # The update was just applied — silence the "system update" reminder.
-  /usr/local/bin/sl-remind-notifications set update
+  # The update was just applied — (re)start the "system update" countdown.
+  /usr/local/bin/sl-notifications set update "$NOTIFY_UPDATE_INTERVAL" \
+    "System update: update the system and run a backup."
 
-  # Seed the btrfs reminder on first run so the monthly scrub countdown starts.
+  # Seed the btrfs reminder once so the monthly scrub countdown starts.
   if [ ! -f "$alerts_dir/btrfs.stamp" ]; then
-    /usr/local/bin/sl-remind-notifications set btrfs
+    /usr/local/bin/sl-notifications set btrfs "$NOTIFY_BTRFS_INTERVAL" \
+      "Btrfs health check: run a btrfs scrub and health check."
   fi
 
   log_ok "reminder stamps updated"
