@@ -265,37 +265,6 @@ enable_system_services() {
   sudo systemctl enable --now $SYSTEMD_SYSTEM_SERVICES
 }
 
-mask_tpm_nvpcr_services() {
-  # Workaround for upstream systemd bug #43848: systemd 262 now requires NvPCR
-  # definitions + a signed PCR policy to be embedded in the UKI (ukify
-  # --sign-initrd-pcrs). UKIs are built with mkinitcpio, so these units fail
-  # on every boot ("Failed to initialize NvPCR index: No such file or directory").
-  # Project doesn't use NvPCR measurement — mask the units until fixed upstream.
-  sudo systemctl mask systemd-tpm2-setup-early.service systemd-pcrproduct.service systemd-pcrlogin@.service
-  sudo systemctl reset-failed systemd-tpm2-setup-early.service \
-    systemd-pcrproduct.service \
-    systemd-pcrlogin@.service 2>/dev/null || true
-
-  # systemd-tpm2-setup-early.service runs inside the initrd (mkinitcpio bundles
-  # it into the UKI), so the /etc mask above doesn't reach it. Mask it in the
-  # initrd via the kernel cmdline instead, then rebuild + re-sign the UKI so the
-  # change is baked in.
-  local cmdline_file="/etc/cmdline.d/root.conf"
-  local mask_flag="rd.systemd.mask=systemd-tpm2-setup-early.service"
-  [ -f "$cmdline_file" ] || return 0
-  grep -qsF "$mask_flag" "$cmdline_file" && return 0
-
-  sudo sed -i "s|$| ${mask_flag}|" "$cmdline_file"
-  sudo mkinitcpio -P
-
-  # Re-sign the freshly rebuilt (now unsigned) UKI. Only possible once sbctl
-  # keys exist; on fresh installs the flag is already baked in by the installer,
-  # so this path only runs on existing systems with enrolled keys.
-  if [ -d /var/lib/sbctl/keys ]; then
-    sign_all_images
-  fi
-}
-
 setup_smartd() {
   if ! command -v smartd &>/dev/null; then
     log_warn "smartd not installed, skipping S.M.A.R.T. monitoring configuration"
@@ -511,6 +480,9 @@ main() {
 
   prime_sudo_cache
 
+  # Disable TPM2 measured boot (no hardware-based unlock wanted, temporary measure until error is fixed in systemd 263)
+  [ -f /etc/cmdline.d/root.conf ] && sudo sed -i -E 's/[[:space:]]*rd\.systemd\.mask=systemd-tpm2-setup-early\.service//g; /systemd\.tpm2_measured_os=0/! s/$/ systemd.tpm2_measured_os=0/' /etc/cmdline.d/root.conf
+
   # Pre-flight validation
   run_step preflight_checks "running preflight checks"
 
@@ -528,7 +500,6 @@ main() {
   run_step install_dev_extras "installing development extras"
   run_step install_additional_packages "installing additional packages"
   run_step enable_system_services "enabling system services"
-  run_step mask_tpm_nvpcr_services "masking TPM NvPCR services (upstream systemd#43848 workaround)"
   run_step setup_smartd "configuring S.M.A.R.T. monitoring (smartd)"
   run_step configure_wireless_regdom "configuring wireless regulatory domain"
   run_step reset_reminder_stamps "resetting reminder stamps"

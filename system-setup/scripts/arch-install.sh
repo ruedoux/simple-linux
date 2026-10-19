@@ -152,7 +152,7 @@ setup_kernel_settings() {
   luks_uuid=$(blkid -s UUID -o value "$LUKS_PART")
   mkdir -p /mnt/etc/cmdline.d
   cat > /mnt/etc/cmdline.d/root.conf <<EOF
-rd.luks.name=${luks_uuid}=cryptroot root=/dev/mapper/cryptroot rootflags=subvol=/@ rw quiet rd.systemd.mask=systemd-tpm2-setup-early.service
+rd.luks.name=${luks_uuid}=cryptroot root=/dev/mapper/cryptroot rootflags=subvol=/@ rw quiet systemd.tpm2_measured_os=0
 EOF
 
   for i in "${!KERNELS[@]}"; do
