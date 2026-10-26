@@ -36,8 +36,11 @@ function M._on_will_remove(path)
   M._deleting[pair] = nil
 end
 
-function M.setup(opts)
-  config = vim.tbl_deep_extend("force", config, opts or {})
+function M.setup(settings)
+  config.pairs = vim.tbl_map(function(s)
+    return { suffix = s }
+  end, settings.pairedExtensions or {})
+
   local events = require("nvim-tree.api").events
   events.subscribe(events.Event.WillRenameNode, function(p)
     M._on_will_rename(p.old_name, p.new_name)

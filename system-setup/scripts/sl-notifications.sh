@@ -1,24 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# sl-notifications — persistent desktop notifications for simple-linux.
-#
-#   set <name> <interval> <msg...>   create/override a reminder and start its countdown
-#   check                             echo the message of every due reminder (one per line)
-#   notify                            (user) send due reminders + smartd alerts as notifications
-#   reset <name>                      reset a reminder's countdown (last = now)
-#   remove <name>                     delete a reminder
-#   list                              show all reminders and when they will next fire
-#   check-update                      (read-only) notify if a repo update is available
-#
-# Each reminder is one file <name>.stamp under NOTIFY_ALERTS_DIR:
-#   last: <epoch-seconds>       when the countdown started / was last reset
-#   interval: <seconds>         how long to wait before the reminder fires
-#   msg: <text>                 message shown when the reminder is due
-#
-# smartd's "-M exec" runs this script with no arguments (SMARTD_* env set),
-# which writes a disk-failure .alert file.
-
 if [ -f /etc/simple-linux/settings.default.env ]; then
   # shellcheck disable=SC1091
   source /etc/simple-linux/settings.default.env

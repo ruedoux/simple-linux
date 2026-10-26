@@ -41,7 +41,15 @@ if [[ "$BUILD" == true ]]; then
     "$DEFAULT_DOCKER_PATH"
 fi
 
-nerdctl run --rm -it \
+CONTAINER_NAME="opencode-custom-$$"
+
+cleanup() {
+  nerdctl rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+nerdctl run -it \
+  --name "$CONTAINER_NAME" \
   --net internet \
   -v "$WORKSPACE:/workspace" \
   -v "$OPENCODE_CONFIG:/root/.config/opencode" \

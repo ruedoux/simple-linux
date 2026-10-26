@@ -1,5 +1,4 @@
 -- Centralized Neovim configuration.
--- Tweak everything here instead of hunting through init.lua.
 
 return {
   -- ============================================================================
@@ -25,10 +24,10 @@ return {
     showmatch = true,          -- highlight matching brackets
     guicursor =
     "n-v-c:block,i-ci-ve:block,r-cr:hor20,o:hor50,a:blinkwait700-blinkoff400-blinkon250-Cursor/lCursor,sm:block-blinkwait175-blinkoff150-blinkon175",
-    conceallevel = 2,          -- hide concealed text (Obsidian)
-    concealcursor = "",        -- don't hide cursor line in markup
-    synmaxcol = 300,           -- max column for syntax highlighting
-    winblend = 0,              -- no floating window transparency
+    conceallevel = 2,   -- hide concealed text (Obsidian)
+    concealcursor = "", -- don't hide cursor line in markup
+    synmaxcol = 300,    -- max column for syntax highlighting
+    winblend = 0,       -- no floating window transparency
 
     -- Scrolling
     scrolloff = 10,     -- keep 10 lines above/below cursor
@@ -125,21 +124,5 @@ return {
       return vim.fn.escape(pattern:sub(2), ".*^$~\\/[]") .. "$"
     end
     return vim.fn.escape(pattern, ".*^$~\\/[]")
-  end,
-
-  -- Build --exclude flags for fd
-  _to_fd_exclude = function(patterns)
-    if #patterns == 0 then return "" end
-    return " " .. table.concat(vim.tbl_map(function(p)
-      return "--exclude '" .. p .. "'"
-    end, patterns), " ")
-  end,
-
-  -- Build -g exclude flags for rg
-  _to_rg_glob = function(patterns)
-    if #patterns == 0 then return "" end
-    return " " .. table.concat(vim.tbl_map(function(p)
-      return "-g '!" .. p .. "'"
-    end, patterns), " ")
   end,
 }
