@@ -2,7 +2,7 @@
 set -euo pipefail
 
 source /etc/simple-linux/settings.default.env
-source /etc/simple-linux/lib.sh
+source /usr/local/lib/simple-linux/lib.sh
 [ -f /etc/simple-linux/settings.env ] && source /etc/simple-linux/settings.env
 
 NO_UPDATE=0
@@ -10,7 +10,7 @@ CHECK_ONLY=0
 REPO="${SYSTEM_WIDE_DEST:-/opt/simple-linux}"
 
 usage() {
-  echo "Usage: sl-system-sync [--no-update] [--check]"
+  echo "Usage: sl-system sync [--no-update] [--check]"
   echo ""
   echo "  --no-update, -n  Skip the full system upgrade (pacman -Syu)."
   echo "                   Configured packages are still installed (--needed)."
@@ -87,13 +87,13 @@ sync_simple_linux_repo() {
   run_step "$REPO/system-setup/install-scripts.sh" "installing updated system files"
 
   # The running process holds the pre-pull version of this script in memory. If the
-  # sync command itself changed, the remaining steps may be stale, so force a re-run
+  # sync command itself changed, the remaining steps may be stale, so force a rerun
   # on the freshly installed version instead of continuing.
-  if git -C "$REPO" diff --quiet "$old_commit" HEAD -- system-setup/scripts/sl-system-sync.sh; then
+  if git -C "$REPO" diff --quiet "$old_commit" HEAD -- system-setup/scripts/commands/sync.sh; then
     return 0
   fi
 
-  log_warn "sl-system-sync was updated — re-run 'sudo sl-system-sync' to apply the remaining steps with the new version."
+  log_warn "sl-system sync was updated — re-run 'sudo sl-system sync' to apply the remaining steps with the new version."
   exit 0
 }
 
@@ -272,7 +272,7 @@ setup_smartd() {
   fi
 
   local smartd_conf="/etc/smartd.conf"
-  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/bin/sl-notifications"
+  local exec_line="DEVICESCAN -m <nomailer> -M exec /usr/local/lib/simple-linux/notifications.sh"
 
   if [ -f "$smartd_conf" ] && grep -qxF "$exec_line" "$smartd_conf"; then
     log_ok "smartd.conf already configured, skipping"
@@ -292,12 +292,12 @@ reset_reminder_stamps() {
   local alerts_dir="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
   # The update was just applied — (re)start the "system update" countdown.
-  /usr/local/bin/sl-notifications set update "$NOTIFY_UPDATE_INTERVAL" \
+  /usr/local/bin/sl-system notifications set update "$NOTIFY_UPDATE_INTERVAL" \
     "System update: update the system and run a backup."
 
   # Seed the btrfs reminder once so the monthly scrub countdown starts.
   if [ ! -f "$alerts_dir/btrfs.stamp" ]; then
-    /usr/local/bin/sl-notifications set btrfs "$NOTIFY_BTRFS_INTERVAL" \
+    /usr/local/bin/sl-system notifications set btrfs "$NOTIFY_BTRFS_INTERVAL" \
       "Btrfs health check: run a btrfs scrub and health check."
   fi
 

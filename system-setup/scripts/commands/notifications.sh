@@ -13,7 +13,7 @@ fi
 ALERTS_DIR="${NOTIFY_ALERTS_DIR:-/var/lib/simple-linux/alerts}"
 
 usage() {
-  echo "Usage: sl-notifications [set <name> <interval> <msg...>|check|notify|reset <name>|remove <name>|list|check-update]" >&2
+  echo "Usage: sl-system notifications [set <name> <interval> <msg...>|check|notify|reset <name>|remove <name>|list|check-update]" >&2
 }
 
 have_notify_send() {
@@ -198,7 +198,7 @@ check_update() {
 
   if [ "$local_head" != "$remote_head" ]; then
     send_notification normal "simple-linux update available" \
-      "A new version is available — run 'sudo sl-system-sync' to update."
+      "A new version is available — run 'sudo sl-system sync' to update."
   fi
 }
 

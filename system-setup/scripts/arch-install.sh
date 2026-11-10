@@ -220,7 +220,7 @@ copy_repository() {
 
 install_system_files() {
   "$SETUP_SCRIPT_DIR/install-scripts.sh" /mnt
-  log_ok "System files installed: /etc/simple-linux/ + /usr/local/bin/sl-system-*"
+  log_ok "System files installed: /etc/simple-linux/ + /usr/local/bin/sl-system + /usr/local/lib/simple-linux/"
 }
 
 finish_setup() {

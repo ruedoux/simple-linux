@@ -1,6 +1,6 @@
 # user-setup
 
-User dotfiles, theming, and management commands. Everything is self contained to an individual user — never requires sudo.
+User dotfiles, theming, and management commands. Everything is self contained to an individual user.
 
 ## Quick Start
 
@@ -24,7 +24,7 @@ Central management hub at `~/.config/simple-linux/sl-controller.sh`:
 
 | Command | Description |
 |---|---|
-| `reload-all` | Full environment refresh: bashrc → yazi desktop → packages → source bashrc → python → flatpaks → wallpaper → monitors → themes |
+| `reload-all` | Full environment refresh |
 | `update-packages` | Installs/updates all packages from `packages/` |
 | `update-flatpacks` | Adds Flathub remote, updates all, installs packages from `SL_USER_FLATPAK_PACKAGES`, applies `SL_USER_FLATPAK_OVERRIDES` |
 | `update-bashrc` | Rsyncs `.bashrc` to `~/.bashrc` (with `.bck` backup) |
@@ -63,7 +63,7 @@ Run `sl-controller.sh config` to open `config.env` in `$EDITOR`. Change any valu
 
 ## Theming System
 
-Theming is a multi-stage pipeline driven by a single wallpaper image.
+Theming is a matugen pipeline driven by a wallpaper image.
 
 **Pipeline steps** (`sl-controller.sh update-themes`):
 
@@ -114,7 +114,7 @@ Available on PATH from `.bashrc`. Dispatch subcommands:
 | Subcommand | Description |
 |---|---|
 | `backup` | Restic backup (local, remote, push, pull). Accepts a `--config <file>` flag pointing to a standalone JSON config with repository details. |
-| `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with host-side health checks via labels). |
+| `containers` | nerdctl container management via compose: `up-all`, `down-all`, `up`, `down`, `restart` (with host side health checks via labels). |
 | `git-switch` | Switch git accounts and SSH keys per session. Reads profiles from a configurable directory. |
 | `opencode` | Run OpenCode in a container. |
 
@@ -158,10 +158,10 @@ available, prompting you to run `sudo sl-system-sync`.
 |---|---|
 | **Hyprland** | Lua-based Wayland compositor. Modular config split across `env`, `env-overrides`, `keybinds`, `colors`, `rules`, `monitors`, `workspaces`, `default-apps`, `user-overrides`. |
 | **Quickshell** | Custom Qt/QML desktop shell — status bar (CPU, memory, network, volume), notification center, app menu with system actions, system tray, wallpaper browser. |
-| **Hyprlock** | Lock screen with blurred wallpaper and Material Design colors (`$primary`, `$on_primary`, `$error`, `$shadow`). |
+| **Hyprlock** | Lock screen with blurred wallpaper. |
 | **Hypridle** | Idle daemon: dim screen → lock → DPMS off. |
 | **Hyprsunset** | Night light / blue light filter. |
-| **Kitty** | GPU-accelerated terminal emulator (config generated from template with font and size from `config.env`). |
+| **Kitty** | Terminal emulator (config generated from template with font and size from `config.env`). |
 | **Yazi** | Terminal file manager with desktop entry for `kitty --class yazi -e yazi`. |
 | **Fastfetch** | System info displayed on login. |
 | **feh** | Lightweight image viewer. |

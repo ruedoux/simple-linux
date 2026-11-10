@@ -1,6 +1,6 @@
-# system-setup — Automated Arch Linux Installation
+# Automated Arch Linux Installation
 
-A fully automated Arch Linux install and configuration system. Takes a bare metal machine (or VM) from Arch ISO boot to a usable Hyprland desktop with full disk encryption, btrfs snapshots, Unified Kernel Images, and Secure Boot signing.
+An automated Arch Linux install and configuration system. Takes a bare metal machine (or VM) from Arch ISO boot to a usable Hyprland desktop with full disk encryption, btrfs snapshots, Unified Kernel Images, and Secure Boot signing.
 
 ## Setup
 
@@ -52,7 +52,7 @@ Copy the settings you want to change from `settings.default.env` into
 Passwords are set via environment variables, or prompted during installation if not provided beforehand.
 
 **Phase 1** (run from Arch ISO — `./setup.sh`):
-**Phase 2** (after reboot, before running `sudo sl-system-sync`):
+**Phase 2** (after reboot, before running `sudo sl-system sync`):
 
 ### 4. Run (2 invocations)
 
@@ -63,7 +63,7 @@ Passwords are set via environment variables, or prompted during installation if 
 # ── Machine reboots into new system, login as admin ──
 
 # Phase 2: Install Hyprland DE, GPU drivers, packages (from installed system)
-sudo sl-system-sync
+sudo sl-system sync
 ```
 
 > Phase 2 is safe to re-run — all pacman installs use `--needed` and user creation
@@ -71,14 +71,14 @@ sudo sl-system-sync
 
 ### Updating
 
-`sl-system-sync` is the single command for both updating simple-linux itself and
-applying your configuration. On each run it checks `/opt/simple-linux` for new
+`sl-system sync` is the single command for both updating simple-linux itself and
+applying your configuration. On each run it checks `/opt/simple-linux` (this epo) for new
 commits and, if any are available, asks before pulling:
 
 ```bash
-sudo sl-system-sync             # checks for updates, prompts, then applies config
-sudo sl-system-sync --check     # only compare local repo to remote (no changes)
-sudo sl-system-sync --no-update # skips pacman -Syu
+sudo sl-system sync             # checks for updates, prompts, then applies config
+sudo sl-system sync --check     # only compare local repo to remote (no changes)
+sudo sl-system sync --no-update # skips pacman -Syu
 ```
 
 When a new version is available you're asked interactively; answering "no" skips
@@ -86,22 +86,11 @@ the pull and continues applying your current configuration. `--check` only
 compares the local clone against the remote and exits non-zero when an update is
 available, so it can be used from cron.
 
-At login, Quickshell runs `sl-notifications check-update`, a read-only check that
+At login, Quickshell runs `sl-system notifications check-update`, a read-only check that
 notifies you when a new version is available in `/opt/simple-linux`.
 
 #### Overrides (`settings.env`)
 
 `/etc/simple-linux/settings.default.env` is **managed and overwritten on update** — don't
 edit it. Put your changes in `/etc/simple-linux/settings.env`, which is
-sourced right after `settings.default.env` and never overwritten:
-
-```bash
-# /etc/simple-linux/settings.env
-ADDITIONAL_PACKAGES="foo bar"      # extra packages installed by sl-system-sync
-PACKAGES="${PACKAGES} baz"         # or override any managed variable directly
-```
-
-`ADDITIONAL_PACKAGES` is installed by `sl-system-sync` and verified by
-`sl-system-health`, so your extra packages survive updates cleanly.
-
-Run `sl-system-health` (read-only) to check disk space, Btrfs scrub status, per-disk S.M.A.R.T. health, package completeness, and dangling packages. It exits non-zero on failures.
+sourced right after `settings.default.env` and never overwritten.

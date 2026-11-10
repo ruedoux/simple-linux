@@ -11,10 +11,11 @@ TRACK_FILE="$DESTDIR/var/lib/simple-linux/installed-files"
 
 # Declarative manifest: mode|source (relative to repo) |destination (relative to $DESTDIR)
 MANIFESTS=(
-  "644|.lib.sh|etc/simple-linux/lib.sh"
-  "755|scripts/sl-system-sync.sh|usr/local/bin/sl-system-sync"
-  "755|scripts/sl-system-health.sh|usr/local/bin/sl-system-health"
-  "755|scripts/sl-notifications.sh|usr/local/bin/sl-notifications"
+  "755|scripts/sl-system.sh|usr/local/bin/sl-system"
+  "644|.lib.sh|usr/local/lib/simple-linux/lib.sh"
+  "755|scripts/commands/sync.sh|usr/local/lib/simple-linux/sync.sh"
+  "755|scripts/commands/health.sh|usr/local/lib/simple-linux/health.sh"
+  "755|scripts/commands/notifications.sh|usr/local/lib/simple-linux/notifications.sh"
 )
 
 # Absolute install paths recorded for the next run's removal pass.
@@ -78,7 +79,7 @@ main() {
   run_step record_installed_files "recording installed files"
 
   if [ -z "$DESTDIR" ]; then
-    log_ok "Done. Run 'sudo sl-system-sync' to apply system changes."
+    log_ok "Done. Run 'sudo sl-system sync' to apply system changes."
   else
     log_ok "Done. System files installed to $DESTDIR"
   fi

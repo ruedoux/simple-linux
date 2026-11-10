@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Standalone sudo command — sources system-wide truth from /etc
-# Installed to /usr/local/bin/sl-system-health during USB setup.
+# Read-only health report — sources system-wide truth from /etc
+# Installed to /usr/local/lib/simple-linux/health.sh, invoked via 'sl-system health'.
 # Reports system health status. Read-only — never modifies the system.
 
 source /etc/simple-linux/settings.default.env
-source /etc/simple-linux/lib.sh
+source /usr/local/lib/simple-linux/lib.sh
 [ -f /etc/simple-linux/settings.env ] && source /etc/simple-linux/settings.env
 
 PASS=0
@@ -217,7 +217,7 @@ check_packages() {
     for m in "${missing[@]}"; do
       log_err "  - ${m}"
     done
-    check_fail "Packages: ${#missing[@]}/${#expected[@]} missing — run 'sudo sl-system-sync'"
+    check_fail "Packages: ${#missing[@]}/${#expected[@]} missing — run 'sudo sl-system sync'"
   fi
 }
 

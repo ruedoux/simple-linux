@@ -16,7 +16,7 @@ source "$SL_ROOT_DIR/.sl-lib.sh"
 load_config
 
 # If not running in a terminal (e.g. via nohup or triggered by another process),
-# redirect all output to log file to prevent nohup.out pollution
+# redirect all output to log file to prevent nohup.out creation
 if [[ ! -t 1 ]]; then
   exec >> "$SL_LOG_FILE" 2>&1
 fi
@@ -126,23 +126,6 @@ _run_matugen() {
   matugen image "$WALLPAPER_DEST_PATH" --verbose --prefer saturation --mode "$SL_THEME_MODE";
 }
 
-_modify_config() {
-  local variable="$1"
-  local value="$2"
-
-  if [[ -z "$variable" || -z "$value" ]]; then
-    log_err "variable and value is required"
-    return 1
-  fi
-
-  if grep -q "^${variable}=" "$SL_CONFIG_PATH"; then
-    sed -i.bak "s|^${variable}=.*|${variable}=\"${value}\"|" "$SL_CONFIG_PATH"
-    rm -f "${SL_CONFIG_PATH}.bak"
-  else
-    printf '%s="%s"\n' "$variable" "$value" >> "$SL_CONFIG_PATH"
-  fi
-}
-
 _validate_config() {
   local var val
   for var in SL_WORKSPACE_COUNT SL_NOTIFICATION_TIMEOUT_MS SL_FONT_SIZE; do
@@ -166,11 +149,11 @@ _validate_config() {
 switch_theme_mode() {
   case "$SL_THEME_MODE" in
     light)
-      _modify_config "SL_THEME_MODE" "dark"
+      toolset.update_config_variable "$SL_CONFIG_PATH" "SL_THEME_MODE" "dark"
       export SL_THEME_MODE="dark"
       ;;
     dark)
-      _modify_config "SL_THEME_MODE" "light"
+      toolset.update_config_variable "$SL_CONFIG_PATH" "SL_THEME_MODE" "light"
       export SL_THEME_MODE="light"
       ;;
   esac

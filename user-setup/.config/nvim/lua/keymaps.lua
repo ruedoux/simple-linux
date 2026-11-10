@@ -47,6 +47,14 @@ function M.setup()
     print("file:", path)
   end, { desc = "Copy full file path" })
 
+  vim.keymap.set("n", "<leader>f", function()
+    if vim.bo.filetype == "json" then
+      require("json-format").format_json()
+    else
+      vim.lsp.buf.format()
+    end
+  end, { desc = "Format buffer" })
+
   -- ============================================================================
   -- Buffers
   -- ============================================================================

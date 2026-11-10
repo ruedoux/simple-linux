@@ -13,7 +13,6 @@ function M.setup()
       "*.jsx",
       "*.ts",
       "*.tsx",
-      "*.json",
       "*.css",
       "*.scss",
       "*.html",
@@ -35,6 +34,19 @@ function M.setup()
         bufnr = args.buf,
         timeout_ms = 2000,
       })
+    end,
+  })
+
+  -- Format JSON on save (no JSON LSP server attached)
+  vim.api.nvim_create_autocmd("BufWritePre", {
+    group = augroup,
+    pattern = { "*.json" },
+    callback = function(args)
+      if vim.bo[args.buf].buftype ~= "" then return end
+      if not vim.bo[args.buf].modifiable then return end
+      if vim.api.nvim_buf_get_name(args.buf) == "" then return end
+
+      pcall(require("json-format").format_json)
     end,
   })
 
