@@ -410,10 +410,11 @@ prepare_package_env() {
 }
 
 usage() {
-  echo "Usage: $0 install <package-file> [--force]"
-  echo "       $0 uninstall <package-file|package-name>"
-  echo "       $0 [install|uninstall] --file|-F <package-file> [--force]"
-  echo "       $0 list   (or: $0 --list)"
+  local cmd="${SL_USER_CMD:-sl-user package}"
+  echo "Usage: $cmd install <package-file> [--force]"
+  echo "       $cmd uninstall <package-file|package-name>"
+  echo "       $cmd [install|uninstall] --file|-F <package-file> [--force]"
+  echo "       $cmd list   (or: $cmd --list)"
   echo
   echo "PKGBUILD convention: package() installs into \$pkgdir using \$HOME-relative"
   echo "subpaths, e.g. \${pkgdir}/.local/bin/foo, \${pkgdir}/.local/share/icons/bar."

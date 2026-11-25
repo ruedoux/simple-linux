@@ -3,7 +3,7 @@ set -euo pipefail
 
 # shellcheck disable=SC2034
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-. "$(dirname "${TOOLSET_SCRIPT_DIR}")/.sl-lib.sh"
+. "$SL_ROOT_DIR/.sl-lib.sh"
 
 # Override to stderr since stdout is captured by eval
 info()  { echo -e "${BLUE}[INFO]${RESET} $*" >&2; }
@@ -81,7 +81,7 @@ main() {
         shift 2
         ;;
       -h|--help)
-        echo "Usage: eval \"\$(toolset.sh git-switch --account <name> [--dir <path>])\""
+        echo "Usage: eval \"\$(sl-user toolset git-switch --account <name> [--dir <path>])\""
         echo ""
         echo "Switches git user and SSH key for the current shell session."
         echo ""
@@ -101,7 +101,7 @@ main() {
   done
 
   if [ -z "$account_name" ]; then
-    error "Usage: eval \"\$(toolset.sh git-switch --account <name> [--dir <path>])\""
+    error "Usage: eval \"\$(sl-user toolset git-switch --account <name> [--dir <path>])\""
     return 1
   fi
 

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SL_ROOT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+SL_USER_LIB_DIR="${SL_USER_LIB_DIR:-$SL_ROOT_DIR/commands}"
+export SL_ROOT_DIR SL_USER_LIB_DIR
+
+source "$SL_ROOT_DIR/.sl-lib.sh"
+sl_dispatch "$SL_USER_LIB_DIR" "sl-user" "$@"

@@ -28,7 +28,7 @@ Item {
       MouseArea {
         anchors.fill: parent
         onClicked: {
-          EventBus.runDetached([Settings.slControllerPath, "switch-theme-mode"], Settings.logFile)
+          EventBus.runDetached([Settings.slUserPath, "controller", "switch-theme-mode"], Settings.logFile)
         }
       }
     }

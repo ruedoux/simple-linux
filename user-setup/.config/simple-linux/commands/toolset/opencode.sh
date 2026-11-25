@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-. "$(dirname "${TOOLSET_SCRIPT_DIR}")/.sl-lib.sh"
+. "$SL_ROOT_DIR/.sl-lib.sh"
 load_config
 
 DEFAULT_DOCKER_PATH="${SL_CONTAINERS_DIR:-}"
@@ -35,7 +35,7 @@ if [[ "${1:-}" == "--build" ]]; then
 fi
 
 if [[ "$BUILD" == true ]]; then
-  nerdctl build -f "$DEFAULT_DOCKER_PATH/opencode.Dockerfile" \
+  nerdctl build --no-cache -f "$DEFAULT_DOCKER_PATH/opencode.Dockerfile" \
     --build-arg OPENCODE_VERSION="$OPENCODE_VERSION" \
     -t "$IMAGE" \
     "$DEFAULT_DOCKER_PATH"

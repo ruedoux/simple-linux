@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-SL_ROOT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+SL_ROOT_DIR="$(dirname "$(dirname "$(realpath "${BASH_SOURCE[0]}")")")"
 export SL_ROOT_DIR
 export SL_TEMPLATE_DIR="$SL_ROOT_DIR/templates"
 export SL_TEMPLATES_JSON="$SL_TEMPLATE_DIR/templates.json"
@@ -11,7 +10,7 @@ export SL_WALLPAPER_SELECTED_FILE="$SL_WALLPAPERS_DIR/.selected"
 export SL_CONFIG_DEFAULT_PATH="$SL_ROOT_DIR/config.default.env"
 export SL_CONFIG_PATH="$SL_ROOT_DIR/config.env"
 export WALLPAPER_DEST_PATH="$SL_ROOT_DIR/files/wallpaper.png"
-export SL_LOG_FILE="${SL_LOG_FILE:-$SL_ROOT_DIR/sl-controller.log}"
+export SL_LOG_FILE="${SL_LOG_FILE:-$SL_ROOT_DIR/sl-user.log}"
 source "$SL_ROOT_DIR/.sl-lib.sh"
 load_config
 
@@ -166,7 +165,7 @@ update_packages() {
     [ -e "$pkg" ] || continue
     local package_name
     package_name="$(basename "$pkg")"
-    "$SL_ROOT_DIR/sl-install-package.sh" install "$SL_ROOT_DIR/packages/$package_name"
+    "$SL_ROOT_DIR/commands/package.sh" install "$SL_ROOT_DIR/packages/$package_name"
   done
 }
 
@@ -374,20 +373,21 @@ reload_all() {
 }
 
 usage() {
+  local cmd="${SL_USER_CMD:-sl-user controller}"
   echo "Usage:"
-  echo "  $SCRIPT_NAME reload-all"
-  echo "  $SCRIPT_NAME config"
-  echo "  $SCRIPT_NAME reload-quickshell"
-  echo "  $SCRIPT_NAME update-packages"
-  echo "  $SCRIPT_NAME update-bashrc"
-  echo "  $SCRIPT_NAME update-python"
-  echo "  $SCRIPT_NAME update-themes"
-  echo "  $SCRIPT_NAME update-monitors"
-  echo "  $SCRIPT_NAME update-flatpacks"
-  echo "  $SCRIPT_NAME update-wallpaper --path [path]"
-  echo "  $SCRIPT_NAME remove-wallpaper --name [name]"
-  echo "  $SCRIPT_NAME switch-theme-mode"
-  echo "  $SCRIPT_NAME setup-dev-env"
+  echo "  $cmd reload-all"
+  echo "  $cmd config"
+  echo "  $cmd reload-quickshell"
+  echo "  $cmd update-packages"
+  echo "  $cmd update-bashrc"
+  echo "  $cmd update-python"
+  echo "  $cmd update-themes"
+  echo "  $cmd update-monitors"
+  echo "  $cmd update-flatpacks"
+  echo "  $cmd update-wallpaper --path [path]"
+  echo "  $cmd remove-wallpaper --name [name]"
+  echo "  $cmd switch-theme-mode"
+  echo "  $cmd setup-dev-env"
 }
 
 case "$SL_THEME_MODE" in

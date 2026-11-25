@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_NAME="$(basename "${BASH_SOURCE[0]:-$0}")"
-. "$(dirname "${TOOLSET_SCRIPT_DIR}")/.sl-lib.sh"
+. "$SL_ROOT_DIR/.sl-lib.sh"
 load_config
 
 DEFAULT_COMPOSE="${SL_CONTAINERS_COMPOSE_FILE:-}"

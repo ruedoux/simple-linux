@@ -135,7 +135,6 @@ export SL_ROOT_PATH=$HOME/.config/simple-linux
 export BASHRC_EXTENSION_PATH=$SL_ROOT_PATH/bashrc-extension.sh
 export EDITOR=nvim
 export PATH=$PATH:$SL_ROOT_PATH
-export PATH=$PATH:$SL_ROOT_PATH/tools
 export PATH=$PATH:$HOME/.pyenv/bin
 
 if [ -f $BASHRC_EXTENSION_PATH ]; then

@@ -21,7 +21,7 @@ Singleton {
   }
 
   function _runUpdateWallpaper(path) {
-    EventBus.runDetached([Settings.slControllerPath, "update-wallpaper", "--path", path], Settings.logFile)
+    EventBus.runDetached([Settings.slUserPath, "controller", "update-wallpaper", "--path", path], Settings.logFile)
     EventBus.wallpaperVisible = false
   }
 
@@ -31,7 +31,7 @@ Singleton {
 
   function deleteFile(name) {
     Qt.callLater(() => {
-      deleteProcess.command = ["sh", "-c", "'" + Settings.slControllerPath + "' remove-wallpaper --name '" + name + "'"]
+      deleteProcess.command = ["sh", "-c", "'" + Settings.slUserPath + "' controller remove-wallpaper --name '" + name + "'"]
       deleteProcess.running = true
     })
 
@@ -40,7 +40,7 @@ Singleton {
   }
 
   function addFile(path) {
-    addProcess.command = [Settings.slControllerPath, "update-wallpaper", "--path", path]
+    addProcess.command = [Settings.slUserPath, "controller", "update-wallpaper", "--path", path]
     addProcess.running = true
   }
 

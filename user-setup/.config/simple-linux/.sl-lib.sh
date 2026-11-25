@@ -72,3 +72,55 @@ toolset.update_config_variable() {
     printf '%s="%s"\n' "$var_name" "$var_value" >> "$config_file_path"
   fi
 }
+
+sl_subcommand_names() {
+  local scripts_dir="$1" script name
+  for script in "$scripts_dir"/*.sh; do
+    [[ -f "$script" ]] || continue
+    name="$(basename "$script")"
+    echo "${name%.sh}"
+  done
+}
+
+sl_print_usage() {
+  local scripts_dir="$1" display_cmd="${2:-${0##*/}}" name
+  echo "Usage: $display_cmd <subcommand> [args...]"
+  echo ""
+  echo "Available subcommands:"
+  while IFS= read -r name; do
+    [[ -n "$name" ]] && echo "  $name"
+  done < <(sl_subcommand_names "$scripts_dir")
+}
+
+# sl_dispatch <scripts_dir> <display_cmd> [args...]
+sl_dispatch() {
+  local scripts_dir="$1" display_cmd="$2"
+  shift 2
+  local cmd="${1:-}" script
+
+  if [[ -z "$cmd" || "$cmd" == "-h" || "$cmd" == "--help" ]]; then
+    sl_print_usage "$scripts_dir" "$display_cmd"
+    exit 0
+  fi
+
+  if [[ ! "$cmd" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: invalid subcommand '$cmd'" >&2
+    sl_print_usage "$scripts_dir" "$display_cmd" >&2
+    exit 1
+  fi
+
+  script="$scripts_dir/$cmd.sh"
+  if [[ ! -f "$script" ]]; then
+    echo "Error: unknown subcommand '$cmd'" >&2
+    sl_print_usage "$scripts_dir" "$display_cmd" >&2
+    exit 1
+  fi
+
+  if [[ ! -x "$script" ]]; then
+    echo "Error: command script '$script' exists but is not executable" >&2
+    exit 1
+  fi
+
+  shift
+  exec "$script" "$@"
+}

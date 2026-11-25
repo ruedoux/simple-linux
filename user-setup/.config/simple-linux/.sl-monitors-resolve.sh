@@ -128,7 +128,7 @@ monitors_resolve() {
     hyprpaper_blocks+=$'\n'
   done
 
-  # Export blocks for the template renderer (sl-controller.sh _render_templates)
+  # Export blocks for the template renderer (sl-user controller _render_templates)
   export SL_MONITOR_BLOCKS="$monitor_blocks"
   export SL_WORKSPACE_BLOCKS="$workspace_blocks"
   export SL_HYPRPAPER_BLOCKS="$hyprpaper_blocks"

@@ -55,6 +55,11 @@ function M.setup()
     end
   end, { desc = "Format buffer" })
 
+  vim.keymap.set("n", "<leader>tw", function()
+    vim.opt_local.wrap = not vim.opt_local.wrap:get()
+    vim.opt_local.linebreak = not vim.opt_local.linebreak:get()
+  end, { desc = "Toggle soft wrap" })
+
   -- ============================================================================
   -- Buffers
   -- ============================================================================
@@ -115,7 +120,13 @@ function M.setup()
     local from = vim.fn.input("Replace: ")
     if from == "" then return end
     local to = vim.fn.input("With: ")
-    vim.cmd("cfdo %s/" .. from .. "/" .. to .. "/gc | update")
+
+    -- Escape the / delimiter and backslashes in the pattern, and escape the
+    -- replacement metacharacters so the search/replace text stays literal.
+    local pattern = vim.fn.escape(from, "/\\")
+    local replacement = vim.fn.escape(to, "/\\&~")
+
+    vim.cmd("cfdo %s/" .. pattern .. "/" .. replacement .. "/g | update")
     vim.cmd("cclose")
   end, { desc = "Replace in quickfix files" })
 

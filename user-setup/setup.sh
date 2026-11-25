@@ -128,7 +128,7 @@ main() {
   run_step copy_dots "copying dots"
   run_step start_user_services "starting user services"
   run_step setup_hyprland_autostart "setting up hyprland autostart"
-  . "$HOME/.config/simple-linux/sl-controller.sh" reload-all
+  . "$HOME/.config/simple-linux/commands/controller.sh" reload-all
   log_success "Setup finished"
 }
 

@@ -65,6 +65,6 @@ Singleton {
   readonly property int wallpaperPanelWidth: (wallpaperThumbnailCount + 1) * wallpaperThumbnailSize
     + wallpaperThumbnailCount * marginMedium + marginMedium * 2
   readonly property string wallpapersDir: Quickshell.env("HOME") + "/.config/simple-linux/files/wallpapers"
-  readonly property string slControllerPath: Quickshell.env("HOME") + "/.config/simple-linux/sl-controller.sh"
+  readonly property string slUserPath: Quickshell.env("HOME") + "/.config/simple-linux/sl-user"
   readonly property string logPath: Quickshell.env("HOME") + "/.config/simple-linux/qs.log"
 }
